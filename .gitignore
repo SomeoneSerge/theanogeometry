@@ -1,0 +1,12 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+.ipynb_checkpoints
+__pycache__
+*.swp
+*.pyc
+old/
+
+bin/
+include/
+lib/
+pip-*
+share/
