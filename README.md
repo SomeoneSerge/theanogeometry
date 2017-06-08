@@ -1,6 +1,4 @@
-# README #
-
-Theano Geometry
+# Theano Geometry #
 
 ### Who do I talk to? ###
 
@@ -8,7 +6,7 @@ Please contact Stefan Sommer *sommer@di.ku.dk*
 
 ### Installation Instructions ###
 
-* Linux:
+#### Linux:
 Install numpy, scipy, theano, jupyter, matplotlib, multiprocess, sklearn:
 ```
 pip install numpy scipy theano jupyter matplotlib multiprocess sklearn
@@ -34,7 +32,8 @@ Start jupyter notebook as in
 
 Some features, e.g. higher-order landmarks, may require a 'Bleeding-Edge Installation' installation of Theano, see http://deeplearning.net/software/theano/install.html installation instructions.
 
-* Linux - vagrant:
+
+#### Linux - vagrant:
 Install vagrant and virtualbox, on Ubuntu e.g.:
 ```
 apt install vagrant virtualbox
@@ -44,9 +43,9 @@ In the vagrant folder, run vagrant and ssh to the box:
 vagrant up
 vagrant ssh -- -L 8888:localhost:8888
 ```
-Open the url http://localhost:8888/ in your web browser.
+Open the url http://localhost:8888/ in your web browser. The notebook password is '12345'
 
-* Windows:
+#### Windows:
 Theano Geometry can be conveniently used on Windows with the provided Vagrantfile:
 
 Step-by-step guide for Windows users
@@ -67,4 +66,3 @@ An example procedure for enabling virtualization for Lenovo laptops is detailed 
 1. When asked for "passphrase for key", press Enter. When asked for password, enter: 12345
 1. Fire up your favourite web browser and open 'http://localhost:8888/'
 1. Enter password '12345' and log in.
-
