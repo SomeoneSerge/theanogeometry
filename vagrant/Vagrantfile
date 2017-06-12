@@ -48,7 +48,7 @@ Vagrant.configure("2") do |config|
     # vb.gui = true
   
     # Customize the amount of memory on the VM:
-    vb.memory = "2048"
+    vb.memory = "4096"
     
     # vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     # vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
@@ -74,7 +74,7 @@ Vagrant.configure("2") do |config|
     echo ubuntu:12345|sudo chpasswd
 
     sudo apt-get update
-    sudo apt-get -y install git python3 python-virtualenv
+    sudo apt-get -y install git python3 python-virtualenv g++ python-dev python3-dev htop
     git clone https://stefansommer@bitbucket.org/stefansommer/theanogeometry.git
 
     cd theanogeometry

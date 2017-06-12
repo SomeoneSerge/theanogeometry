@@ -10,3 +10,7 @@ include/
 lib/
 pip-*
 share/
+
+# vagrant
+vagrant/.vagrant/
+vagrant/*.log
