@@ -55,15 +55,18 @@ Exptf = theano.function([q,p], Expt(q,p))
 
 # Logarithmic map
 loss = lambda q,p,x: 1./d.eval()*T.sum(T.sqr(Exp(q,p)-x))
+dloss = lambda q,p,x: T.grad(loss(q,p,x),p)
 lossf = theano.function([q,p,x], loss(q,p,x))
+dlossf = theano.function([q,p,x], dloss(q,p,x))
 
 from scipy.optimize import minimize,fmin_bfgs,fmin_cg
 def shoot(q1,q2,p0):
-    def fopts(x):
-        y = lossf(q1,x,q2).astype(theano.config.floatX)
-        return y
+    def f(x):
+        y = lossf(q1,x,q2)
+        dy = dlossf(q1,x,q2)
+        return (y,dy)
     
-    res = minimize(fopts, p0, method='L-BFGS-B', jac=False, options={'disp': False, 'maxiter': 100})
+    res = minimize(f, p0, method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
     
     return(res.x,res.fun)
 

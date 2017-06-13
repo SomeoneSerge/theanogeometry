@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from pylab import rcParams
-rcParams['figure.figsize'] = 10,6
+rcParams['figure.figsize'] = 9,7
 
 from src.params import * 
 from src.utils import * 
