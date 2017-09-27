@@ -18,6 +18,7 @@
 #
 
 from src.utils import *
+from src.linalg import *
 
 #######################################################################
 # guided processes, Delyon/Hu 2006                                    #
@@ -27,6 +28,7 @@ from src.utils import *
 def get_sde_guided(sde_f,phi,sqrtCov,method='DelyonHu',integration='ito'):
     assert(integration is 'ito' or method is 'stratonovich')
     assert(method is 'DelyonHu') # more general schemes not implemented
+
     def sde_guided(dW,t,x,log_likelihood,log_varphi,v,*ys):
         (det,sto,X,*dys_sde) = sde_f(dW,t,x,*ys)
         h = theano.ifelse.ifelse(T.lt(t,Tend-dt/2),
@@ -46,7 +48,7 @@ def get_sde_guided(sde_f,phi,sqrtCov,method='DelyonHu',integration='ito'):
         Pres =  T.nlinalg.MatrixInverse()(Cov)
         residual = T.dot(dW_guided,Pres*dW_guided)
         residual = T.tensordot(dW_guided,T.tensordot(Pres,dW_guided,(1,0)),(0,0))
-        log_likelihood = .5*(-dW.shape[0]*T.log(2*np.pi)+linalg.LogAbsDet()(Pres)-residual)
+        log_likelihood = .5*(-dW.shape[0]*T.log(2*np.pi)+LogAbsDet()(Pres)-residual)
 
         ## correction factor
         ytilde = T.tensordot(X,h*(Tend-t),1)

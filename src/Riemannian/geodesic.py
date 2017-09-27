@@ -32,6 +32,8 @@ def initialize(M):
         return T.stack((dx1t,dx2t))
 
     geodesic = lambda x,v: integrate(ode_geodesic, T.stack((x,v)))
+    M.Exp = lambda x,v: geodesic(x,v)[1][-1,0]
+    M.Expf = theano.function([x,v], M.Exp(x,v))
     M.Expt = lambda x,v: geodesic(x,v)[1][:,0]
     M.Exptf = theano.function([x,v], M.Expt(x,v))
 

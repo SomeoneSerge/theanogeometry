@@ -17,30 +17,31 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.params import *
-
+from src.setup import *
 from src.utils import *
 
-###############################################################
-# Logarithm map from provided exponential
-###############################################################
+def initialize(M):
+    """ numerical Riemannian Logarithm map """
 
-# Logarithmic map
-loss = lambda q,p,x: 1./d.eval()*T.sum(T.sqr(Exp(q,p)-x))
-dloss = lambda q,p,x: T.grad(loss(q,p,x),p)
-lossf = theano.function([q,p,x], loss(q,p,x))
-dlossf = theano.function([q,p,x], dloss(q,p,x))
+    x = M.element()
+    y = M.element()
+    v = M.vector()
 
-from scipy.optimize import minimize,fmin_bfgs,fmin_cg
-def shoot(q1,q2,p0):
-    def f(x):
-        y = lossf(q1,x,q2)
-        dy = dlossf(q1,x,q2)
-        return (y,dy)
-    
-    res = minimize(f, p0, method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
-    
-    return(res.x,res.fun)
+    loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(M.Exp(x,v)-y))
+    dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
+    lossf = theano.function([x,v,y], loss(x,v,y))
+    dlossf = theano.function([x,v,y], dloss(x,v,y))
 
-Logf = lambda q1,q2,p0: shoot(q1,q2,p0)
+    from scipy.optimize import minimize,fmin_bfgs,fmin_cg
+    def shoot(x,y,v0):
+        def f(w):
+            z = lossf(x,w,y)
+            dz = dlossf(x,w,y)
+            return (z,dz)
+
+        res = minimize(f, v0, method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
+
+        return(res.x,res.fun)
+
+    M.Logf = lambda x,y,v0: shoot(x,y,v0)
 

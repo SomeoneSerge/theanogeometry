@@ -91,6 +91,9 @@ class SON(LieGroup):
 
         super(SON,self).initialize()
 
+    def __str__(self):
+        return "SO(%d) (dimemsion %d)" % (self.N.eval(),self.dim.eval())
+
     ### plotting
     import matplotlib.pyplot as plt
     def plotg(self,g,color_intensity=1.,color=None,linewidth=3.,prevg=None):
@@ -113,9 +116,6 @@ class SON(LieGroup):
                 ss = np.stack((prevs,s))
                 ss = ss/np.linalg.norm(ss,axis=1)[:,np.newaxis,:]
                 plt.plot(ss[:,0,i],ss[:,1,i],ss[:,2,i],linewidth=.3,color=colors[i])
-
-    def __str__(self):
-        return "SO(%d) (dimemsion %d)" % (self.N.eval(),self.dim.eval())
 
 ## skew symmetric test
 ## np.random.seed(42)

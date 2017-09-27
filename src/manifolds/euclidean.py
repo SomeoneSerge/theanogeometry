@@ -20,12 +20,22 @@
 from src.setup import *
 from src.params import *
 
-################################
-# Setup for Euclidean space    #
-################################
+class Euclidean(Manifold):
+    """ Euclidean space """
 
-manifold = 'euclidean'
+    def __init__(self,N=2):
+        Manifold.__init__(self)
+        self.dim = constant(N)
 
-d = T.constant(2)
+        self.g = lambda x: T.eye(self.dim)
 
-gM = lambda q: T.eye(d)
+        # action of matrix group on elements
+        x = self.element()
+        g = T.matrix() # group matrix
+        gs = T.tensor3() # sequence of matrices
+        self.act = lambda g,x: T.tensordot(g,x,(1,0))
+        self.actf = theano.function([g,x], self.act(g,x))
+        self.actsf = theano.function([gs,x], self.act(gs,x))
+
+    def __str__(self):
+        return "Euclidean manifold of dimension %d" % (self.dim.eval())
