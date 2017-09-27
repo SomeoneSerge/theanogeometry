@@ -17,18 +17,24 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.setup import *
+from src.utils import *
+from sklearn.decomposition import PCA
 
-##########################################################################
-# this file contains various object definitions, and standard parameters #
-##########################################################################
+def Tangent_PCA(y,mean,Logf,options=None):
+    try:
+        mpu.openPool()
+        N = y.shape[0]
+        sol = mpu.pool.imap(lambda pars: (Logf(mean,y[pars[0]],np.zeros(mean.shape))[0],),mpu.inputArgs(range(N)))
+        res = list(sol)
+        Logs = mpu.getRes(res,0)     
+    except:
+        mpu.closePool()
+        raise
+    else:
+        mpu.closePool()
 
-# timestepping
-Tend = T.constant(1.)
-n_steps = theano.shared(100)
-dt = Tend/n_steps
+    pca = PCA()
+    pca.fit(Logs)
 
-# Integrator variables:
-default_method = 'euler'
-
-
+    return pca
+    

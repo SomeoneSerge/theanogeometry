@@ -19,17 +19,18 @@
 
 from src.setup import *
 from src.utils import *
-from src.manifold import *
-from src.metric import *
 
-def ode_geodesic(t,x):
-    
-    dx2t = - T.tensordot(T.tensordot(x[1], Gamma_gM(x[0]), axes = [0,1]),
-                        x[1],axes = [1,0])
-    dx1t = x[1]
-    
-    return T.stack((dx1t,dx2t))
+def initialize(M):
+    """ Brownian motion in coordinates """
 
-geo = lambda q,p: integrate(ode_geodesic, T.stack((q,p)))
-Expt = lambda q,p: geo(q,p)[1][:,0]
-Exptf = theano.function([q,p], Expt(q,p))
+    x = M.element()
+
+    def sde_Brownian_coords(dW,t,q):
+        gsharpq = M.gsharp(q)
+        X = theano.tensor.slinalg.Cholesky()(gsharpq)
+        det = T.tensordot(gsharpq,M.Gamma_g(q),((0,1),(0,1)))
+        sto = T.tensordot(X,dW,(1,0))
+        return (det,sto,X)
+    M.Brownian_coords = lambda x,dWt: integrate_sde(sde_Brownian_coords,integrator_ito,x,dWt)
+    M.Brownian_coordsf = theano.function([x,dWt], M.Brownian_coords(x,dWt))
+

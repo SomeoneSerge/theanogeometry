@@ -18,17 +18,20 @@
 #
 
 from src.setup import *
+from src.utils import *
 
-##########################################################################
-# this file contains various object definitions, and standard parameters #
-##########################################################################
+def initialize(M):
+    x = M.element()
+    v = M.covector()
 
-# timestepping
-Tend = T.constant(1.)
-n_steps = theano.shared(100)
-dt = Tend/n_steps
+    def ode_geodesic(t,x):
+        dx2t = - T.tensordot(T.tensordot(x[1],
+                                         M.Gamma_g(x[0]), axes = [0,1]),
+                             x[1],axes = [1,0])
+        dx1t = x[1]
+        return T.stack((dx1t,dx2t))
 
-# Integrator variables:
-default_method = 'euler'
-
+    geodesic = lambda x,v: integrate(ode_geodesic, T.stack((x,v)))
+    M.Expt = lambda x,v: geodesic(x,v)[1][:,0]
+    M.Exptf = theano.function([x,v], M.Expt(x,v))
 

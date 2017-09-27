@@ -19,19 +19,23 @@
 
 from src.setup import *
 from src.utils import *
-from src.manifold import *
-from src.metric import *
 
-# Curvature:
-def R(x):
-    return T.tensordot(Gamma_gM(x),Gamma_gM(x),axes = [0,2]).dimshuffle(0,3,1,2) - T.tensordot(Gamma_gM(x),Gamma_gM(x),axes = [0,2]).dimshuffle(3,0,1,2) + T.jacobian(Gamma_gM(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) - T.jacobian(Gamma_gM(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
+def initialize(M):
+    """ Riemannian parallel transport """
 
-def R_ui(x,ui):
-    return T.tensordot(T.nlinalg.matrix_inverse(ui),T.tensordot(R(x),ui,(2,0)),(1,2)).dimshuffle(1,2,0,3)
+    d = M.dim
+    x = M.element()
+    u = M.frame()
 
-Rf = theano.function([x], R(x))
-R_uif = theano.function([x,ui], R_ui(x,ui))
+    def ode_parallel_transport(gamma,dgamma,t,x):
+        dpt = - T.tensordot(T.tensordot(dgamma, M.Gamma_g(gamma),axes = [0,1]),
+                            x, axes = [1,0])
+        return dpt
 
-# Sectional Curvature:
-
+    parallel_transport = lambda v,gamma,dgamma: integrate(ode_parallel_transport,v,gamma,dgamma)
+    M.parallel_transport = lambda v,gamma,dgamma: parallel_transport(v,gamma,dgamma)[1]
+    v = M.vector()
+    gamma = M.elements()
+    dgamma = M.vectors()
+    M.parallel_transportf = theano.function([v,gamma,dgamma], M.parallel_transport(v,gamma,dgamma))
 

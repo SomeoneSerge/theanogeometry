@@ -17,21 +17,20 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.manifold import *
 from src.metric import *
-from src.Hamiltonian import *
 
-def Frechet_mean(y,q0,p0,options=None):
-    
+def Frechet_mean(y,Logf,q0=None,options=None):    
     global steps
     steps = []
     steps.append(q0)
+    
+    if q0 is None:
+        q0 = np.random.normal(size=y[0].shape)
 
     def fopts(x):
-        res = 0.
-        grad = np.zeros(d.eval())
+        x = x.reshape(q0.shape)
         N = y.shape[0]
-        sol = mpu.pool.imap(lambda pars: (Logf(x,y[pars[0],:],p0)[0],),mpu.inputArgs(range(N)))
+        sol = mpu.pool.imap(lambda pars: (Logf(x,y[pars[0]],np.zeros(x.shape))[0],),mpu.inputArgs(range(N)))
         res = list(sol)
         Logs = mpu.getRes(res,0)     
 

@@ -25,6 +25,8 @@ from theano.tensor.shared_randomstreams import RandomStreams
 
 from theano import function, config
 
+from src.utils import *
+
 from scipy.optimize import minimize, fmin_bfgs, fmin_cg, fmin_l_bfgs_b
 
 import time
