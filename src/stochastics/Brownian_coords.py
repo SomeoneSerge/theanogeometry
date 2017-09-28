@@ -31,6 +31,7 @@ def initialize(M):
         det = T.tensordot(gsharpq,M.Gamma_g(q),((0,1),(0,1)))
         sto = T.tensordot(X,dW,(1,0))
         return (det,sto,X)
+    M.sde_Brownian_coords = sde_Brownian_coords
     M.Brownian_coords = lambda x,dWt: integrate_sde(sde_Brownian_coords,integrator_ito,x,dWt)
     M.Brownian_coordsf = theano.function([x,dWt], M.Brownian_coords(x,dWt))
 
