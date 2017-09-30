@@ -19,8 +19,10 @@
 
 from src.setup import *
 
+def Frechet_mean(M, Logf, y, x0=None, options=None):
+    global _M # to avoid pickling M in multiprocess
+    _M = M
 
-def Frechet_mean(M, y, x0=None, options=None):
     if x0 is None:
         x0 = np.random.normal(size=M.dim.eval())
 
@@ -30,12 +32,12 @@ def Frechet_mean(M, y, x0=None, options=None):
     def fopts(x):
         x = x.reshape(x0.shape)
         N = y.shape[0]
-        # sol = mpu.pool.imap(lambda pars: (M.Logf(x,y[pars[0]],np.zeros(x.shape))[0],),mpu.inputArgs(range(N)))
-        # res = list(sol)
-        # Logs = mpu.getRes(res,0)
-        Logs = np.zeros((N, M.dim.eval()))
-        for i in range(N):
-            Logs[i] = M.Logf(x, y[i], np.zeros(M.dim.eval()))[0]
+        sol = mpu.pool.imap(lambda pars: (Logf(x,y[pars[0]],np.zeros(x.shape))[0],),mpu.inputArgs(range(N)))
+        res = list(sol)
+        Logs = mpu.getRes(res,0)
+        #Logs = np.zeros((N, M.dim.eval()))
+        #for i in range(N):
+        #    Logs[i] = M.Logf(x, y[i], np.zeros(M.dim.eval()))[0]
 
         res = (1. / N) * np.sum(np.square(Logs))
         grad = -(2. / N) * np.sum(Logs, 0)

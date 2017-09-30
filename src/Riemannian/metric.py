@@ -29,13 +29,13 @@ def initialize(M):
     if hasattr(M, 'g'):
         if not hasattr(M, 'gsharp'):
             M.gsharp = lambda x: T.nlinalg.matrix_inverse(M.g(x))
-            M.gsharpf = theano.function([x],M.gsharp(x))
     elif hasattr(M, 'gsharp'):
         if not hasattr(M, 'g'):
             M.g = lambda x: T.nlinalg.matrix_inverse(M.gsharp(x))
-            M.gf = theano.function([x],M.g(x))
     else:
         raise ValueError('no metric or cometric defined on manifold')
+    M.gf = theano.function([x],M.g(x))
+    M.gsharpf = theano.function([x],M.gsharp(x))
 
 
     M.Dg = lambda x: T.jacobian(M.g(x).flatten(),x).reshape((d,d,d)) # Derivative of metric

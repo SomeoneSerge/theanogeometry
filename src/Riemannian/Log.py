@@ -27,7 +27,8 @@ def initialize(M):
     y = M.element()
     v = M.vector()
 
-    loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(M.Exp(x,v)-y))
+    f = M.Exp
+    loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(f(x,v)-y))
     dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
     lossf = theano.function([x,v,y], loss(x,v,y))
     dlossf = theano.function([x,v,y], dloss(x,v,y))
