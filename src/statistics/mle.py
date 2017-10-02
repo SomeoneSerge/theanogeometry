@@ -25,7 +25,7 @@ def iterative_mle(obss,log_p_T,update_thetas,options):
         log_likelihoods = np.zeros(options['epochs'])
 
         # initial thetas
-        thetas = options['initial']
+        thetas = np.array(options['initial'])
         print("initial thetas:", thetas)
 
         # iterations
