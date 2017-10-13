@@ -26,7 +26,7 @@ import matplotlib.ticker as ticker
 from pylab import rcParams
 rcParams['figure.figsize'] = 9,7
 
-from src.params import * 
+from src.setup import * 
 from src.utils import * 
 
 ############################
@@ -78,68 +78,68 @@ def plot_density_estimate(M, obss, alpha=.2, limits=None, border=1.5, bandwidth=
         m.set_array(colors)
         plt.colorbar(m, shrink=0.7)
 
-##### Spherical plotting
-#
-## plot general function on S2
-#def plot_sphere_f(f, alpha=.2, pts=100, cmap = cm.jet, parallel=False, vmin=None, colorbar=True):
-#        # grids
-#        phi, theta = np.meshgrid(np.linspace(0.,2.*np.pi,pts),np.linspace(0.,np.pi,pts))
-#        phitheta = np.vstack([phi.ravel(), theta.ravel()]).T
-#        xs = np.apply_along_axis(F_sphericalf,1,phitheta)
-#        X = xs[:,0].reshape(phi.shape)
-#        Y = xs[:,1].reshape(phi.shape)
-#        Z = xs[:,2].reshape(phi.shape)
-#        
-#        # plot
-#        ax = plt.gca()        
-#        if not parallel:                            
-#            fs = np.apply_along_axis(f,1,xs)
-#        else:
-#            try:
-#                pf = lambda pars: (f(pars[0]),) # wrapped f for parallel execution
-#                mpu.openPool()
-#                sol = mpu.pool.imap(pf,mpu.inputArgs(xs,))
-#                res = list(sol)
-#                fs = mpu.getRes(res,0)
-#            except:
-#                mpu.closePool()
-#                raise
-#            else:
-#                mpu.closePool()        
-#        if vmin is None:
-#            norm = mpl.colors.Normalize()
-#            norm.autoscale(fs)                
-#        else:
-#            norm = mpl.colors.Normalize(vmin=vmin,vmax=np.max(fs))
-#        colors = cmap(norm(fs)).reshape(phi.shape+(4,))
-#        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, facecolors = colors, linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
-#        m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)
-#        m.set_array(colors)
-#        if colorbar:
-#            plt.colorbar(m, shrink=0.7)
-#
-## plot density estimate using spherical coordinates
-#def plot_sphere_density_estimate(obss_M, alpha=.2, bandwidth=0.08, pts=100, cmap = cm.jet):
-#        obss_M = np.apply_along_axis(lambda v: v/np.linalg.norm(v),1,obss_M)
-#        obss_q = np.apply_along_axis(F_spherical_invf,1,obss_M)        
-#        kde = KernelDensity(bandwidth=bandwidth, metric='pyfunc', metric_params={"func":lambda q1,q2: np.linalg.norm((F_sphericalf(q1)-F_sphericalf(q2)))},
-#                        kernel='gaussian')
-#        kde.fit(obss_q)
-#                            
-#        # grids
-#        phi, theta = np.meshgrid(np.linspace(0.,2.*np.pi,pts),np.linspace(0.,np.pi,pts))
-#        phitheta = np.vstack([phi.ravel(), theta.ravel()]).T
-#        xs = np.apply_along_axis(F_sphericalf,1,phitheta)
-#        X = xs[:,0].reshape(phi.shape)
-#        Y = xs[:,1].reshape(phi.shape)
-#        Z = xs[:,2].reshape(phi.shape)
-#        
-#        # plot
-#        ax = plt.gca()
-#        fs = np.exp(kde.score_samples(phitheta))#/np.apply_along_axis(muM_Q_sphericalf,1,phitheta)
-#        norm = mpl.colors.Normalize(vmin=0.,vmax=np.max(fs))
-#        colors = cmap(norm(fs)).reshape(phi.shape+(4,))
-#        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, facecolors = colors, linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
-#        m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)    
-#        m.set_array(colors)
-#        plt.colorbar(m, shrink=0.7)
+#### Spherical plotting functions
+# plot general function on S2
+def plot_sphere_f(M, f, alpha=.2, pts=100, cmap = cm.jet, parallel=False, vmin=None, colorbar=True):
+        # grids
+        phi, theta = np.meshgrid(np.linspace(0.,2.*np.pi,pts),np.linspace(0.,np.pi,pts))
+        phitheta = np.vstack([phi.ravel(), theta.ravel()]).T
+        xs = np.apply_along_axis(M.F_sphericalf,1,phitheta)
+        X = xs[:,0].reshape(phi.shape)
+        Y = xs[:,1].reshape(phi.shape)
+        Z = xs[:,2].reshape(phi.shape)
+        
+        # plot
+        ax = plt.gca()        
+        if not parallel:                            
+            fs = np.apply_along_axis(f,1,xs)
+        else:
+            try:
+                pf = lambda pars: (f(pars[0]),) # wrapped f for parallel execution
+                mpu.openPool()
+                sol = mpu.pool.imap(pf,mpu.inputArgs(xs,))
+                res = list(sol)
+                fs = mpu.getRes(res,0)
+            except:
+                mpu.closePool()
+                raise
+            else:
+                mpu.closePool()        
+        if vmin is None:
+            norm = mpl.colors.Normalize()
+            norm.autoscale(fs)                
+        else:
+            norm = mpl.colors.Normalize(vmin=vmin,vmax=np.max(fs))
+        colors = cmap(norm(fs)).reshape(phi.shape+(4,))
+        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, facecolors = colors, linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
+        m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)
+        m.set_array(colors)
+        if colorbar:
+            plt.colorbar(m, shrink=0.7)
+
+# plot density estimate using spherical coordinates
+def plot_sphere_density_estimate(M, obss_M, alpha=.2, bandwidth=0.08, pts=100, cmap = cm.jet):
+        obss_M = np.apply_along_axis(lambda v: v/np.linalg.norm(v),1,obss_M)
+        obss_q = np.apply_along_axis(M.F_spherical_invf,1,obss_M)        
+        kde = KernelDensity(bandwidth=bandwidth, metric='pyfunc', metric_params={"func":lambda q1,q2: np.linalg.norm((M.F_sphericalf(q1)-M.F_sphericalf(q2)))},
+                        kernel='gaussian')
+        kde.fit(obss_q)
+                            
+        # grids
+        phi, theta = np.meshgrid(np.linspace(0.,2.*np.pi,pts),np.linspace(0.,np.pi,pts))
+        phitheta = np.vstack([phi.ravel(), theta.ravel()]).T
+        xs = np.apply_along_axis(M.F_sphericalf,1,phitheta)
+        X = xs[:,0].reshape(phi.shape)
+        Y = xs[:,1].reshape(phi.shape)
+        Z = xs[:,2].reshape(phi.shape)
+        
+        # plot
+        ax = plt.gca()
+        fs = np.exp(kde.score_samples(phitheta))#/np.apply_along_axis(muM_Q_sphericalf,1,phitheta)
+        norm = mpl.colors.Normalize(vmin=0.,vmax=np.max(fs))
+        colors = cmap(norm(fs)).reshape(phi.shape+(4,))
+        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, facecolors = colors, linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
+        m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)    
+        m.set_array(colors)
+        plt.colorbar(m, shrink=0.7)
+

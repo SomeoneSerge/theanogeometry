@@ -114,78 +114,106 @@ def bridge_sampling(lg,dlog_likelihoodf,dWsf,options,pars):
         log_varphis[i] = log_varphi[-1]
         log_likelihoods[i] = log_likelihood[-1]
         try:
-            v = options['update_v'](v) # update v, e.g. simulate in fiber
+            v = options['update_vf'](v) # update v, e.g. simulate in fiber
         except KeyError:
             pass
     return (bridges,log_varphis,log_likelihoods,v)
 
-# symbolic lift to fiber not supported yet
-def log_p_T(g, v, dWs, bridge_sde, phi, options, sigma=None, sde=None):
+# helper for log-transition density
+def p_T_log_p_T(g, v, dWs, bridge_sde, phi, options, sigma=None, sde=None):
     """ Monte Carlo approximation of log transition density from guided process """
     if sigma is None and sde is not None:
         (_, _, XT) = sde(dWs, Tend, v)  # starting point of SDE, we need diffusion field X at t=0
         sigma = XT
     assert (sigma is not None)
-    Cgv = T.sum(phi(g, v) ** 2)
-
+    
     # sample noise
     (cout, updates) = theano.scan(fn=lambda x: dWs,
                                   outputs_info=[T.zeros_like(dWs)],
                                   n_steps=options['samples_per_obs'])
     dWsi = cout
 
-    # bridges
-    def bridge_p_T(dWs, gs, log_varphi):
-        (ts, gs, log_likelihood, log_varphi, _) = bridge_sde(g, v, dWs)
-        return (gs, log_varphi[-1])
+    if not 'update_v' in options:
+        # v constant throughout sampling
+        print("transition density with v constant")
 
-    (cout, updates) = theano.scan(fn=bridge_p_T,
-                                  outputs_info=[T.zeros((n_steps,g.shape[0]) if g.type == T.vector().type else (n_steps,g.shape[0],g.shape[1])), T.constant(0.)],
-                                  sequences=[dWsi])
+        # bridges
+        Cgv = T.sum(phi(g, v) ** 2)
+        def bridge_logvarphis(dWs, log_varphi):
+            (ts, gs, log_likelihood, log_varphi, _) = bridge_sde(g, v, dWs)
+            return log_varphi[-1]
 
-    bridges = cout[:][0]
-    log_varphis = cout[:][1]
+        (cout, updates) = theano.scan(fn=bridge_logvarphis,
+                                      outputs_info=[T.constant(0.)],
+                                      sequences=[dWsi])
+        log_varphi = T.log(T.mean(T.exp(cout)))
+        log_p_T = -.5 * sigma.shape[0] * T.log(2. * np.pi * Tend) - LogAbsDet()(sigma) - Cgv / (2. * Tend) + log_varphi
+        p_T = T.exp(log_p_T)
+    else:
+        # update v during sampling, e.g. for fiber densities
+        print("transition density with v updates")
 
-    # p_T =  T.power(2.*np.pi*Tend,-.5*sigma.shape[0])/T.abs_(T.nlinalg.Det()(sigma))*T.exp(-Cgv/(2.*Tend))*T.mean(T.exp(log_varphis))
-    return -.5 * sigma.shape[0] * T.log(2. * np.pi * Tend) - LogAbsDet()(sigma) - Cgv / (2. * Tend) + T.log(T.mean(T.exp(log_varphis)))
+        # bridges
+        def bridge_p_T(dWs, lp_T, lv):
+            Cgv = T.sum(phi(g, lv) ** 2)
+            (ts, gs, log_likelihood, log_varphi, _) = bridge_sde(g, lv, dWs)            
+            lp_T =  T.power(2.*np.pi*Tend,-.5*sigma.shape[0])/T.abs_(T.nlinalg.Det()(sigma))*T.exp(-Cgv/(2.*Tend))*T.exp(log_varphi[-1])
+            lv = options['update_v'](lv)                        
+            return (lp_T, lv)
+
+        (cout, updates) = theano.scan(fn=bridge_p_T,
+                                      outputs_info=[T.constant(0.), v],
+                                      sequences=[dWsi])
+        p_T = T.mean(cout[:][0])
+        log_p_T = T.log(p_T)
+        v = cout[-1][1]
+    
+    return (p_T,log_p_T,v)
+
+def p_T(*args,**kwargs): return p_T_log_p_T(*args,**kwargs)[0]
+def log_p_T(*args,**kwargs): return p_T_log_p_T(*args,**kwargs)[1]
+
+def dp_T(thetas,*args,**kwargs):
+    """ Monte Carlo approximation of transition density gradient """
+    lp_T = p_T(*args,**kwargs)
+    return (lp_T,)+tuple(T.grad(lp_T,theta) for theta in thetas)
 
 def dlog_p_T(thetas,*args,**kwargs):
     """ Monte Carlo approximation of log transition density gradient """
     llog_p_T = log_p_T(*args,**kwargs)
     return (llog_p_T,)+tuple(T.grad(llog_p_T,theta) for theta in thetas)
 
-
-def log_p_T_numeric(lg,v,dWsf,bridge_sdef,phif,options,sigma=None,sdef=None,x0=None):
-    """ numpy version of Monte Carlo log transition density """
-    vorg = v # debug
-    if x0 is not None: # if lv point on manifold, lift target to fiber
-        v = lift_to_fiber(v,x0)[0]
-    if sdef is not None:
-        (_,_,XT) = sdef(Tend.eval(),v) # starting point of SDE, we need diffusion field X at t=0
-        sigma = XT
-    elif sigma is not None:
-        sigma = sigma.eval()
-    assert(sigma is not None)
-    bridges = np.zeros((options['samples_per_obs'],n_steps.eval(),)+lg.shape)
-    log_varphis = np.zeros((options['samples_per_obs'],))
-    Cgvs = np.zeros((options['samples_per_obs'],))
-    for i in range(options['samples_per_obs']):
-        try:
-            (ts,gs,log_likelihood,log_varphi) = bridge_sdef(lg,v,dWsf())
-        except ValueError:
-            print('Bridge sampling error:')
-            print(v)
-            print(vorg)
-            print(lift_to_fiber(vorg,x0))
-            print(phif(lg,v))
-            raise
-        bridges[i] = gs
-        log_varphis[i] = log_varphi[-1]
-        Cgvs[i] = np.linalg.norm(phif(lg,v))**2
-        try:
-            v = options['update_v'](v) # update v, e.g. simulate in fiber
-        except KeyError:
-            pass
-#     p_T = np.power(2.*np.pi*Tend.eval(),-.5*sigma.shape[0])/np.abs(np.linalg.det(sigma))*np.mean(np.exp(-Cgvs/(2.*Tend.eval()))*np.exp(log_varphis))
-    return -.5*sigma.shape[0]*np.log(2.*np.pi*Tend.eval())-np.log(np.abs(np.linalg.det(sigma)))+np.log(np.mean(np.exp(-Cgvs/(2.*Tend.eval()))*np.exp(log_varphis)))
+#def log_p_T_numeric(lg,v,dWsf,bridge_sdef,phif,options,sigma=None,sdef=None,x0=None):
+#    """ numpy version of Monte Carlo log transition density """
+#    vorg = v # debug
+#    if x0 is not None: # if lv point on manifold, lift target to fiber
+#        v = lift_to_fiber(v,x0)[0]
+#    if sdef is not None:
+#        (_,_,XT) = sdef(Tend.eval(),v) # starting point of SDE, we need diffusion field X at t=0
+#        sigma = XT
+#    elif sigma is not None:
+#        sigma = sigma.eval()
+#    assert(sigma is not None)
+#    bridges = np.zeros((options['samples_per_obs'],n_steps.eval(),)+lg.shape)
+#    log_varphis = np.zeros((options['samples_per_obs'],))
+#    Cgvs = np.zeros((options['samples_per_obs'],))
+#    for i in range(options['samples_per_obs']):
+#        try:
+#            (ts,gs,log_likelihood,log_varphi) = bridge_sdef(lg,v,dWsf())
+#        except ValueError:
+#            print('Bridge sampling error:')
+#            print(v)
+#            print(vorg)
+#            print(lift_to_fiber(vorg,x0))
+#            print(phif(lg,v))
+#            raise
+#        bridges[i] = gs
+#        log_varphis[i] = log_varphi[-1]
+#        Cgvs[i] = np.linalg.norm(phif(lg,v))**2
+#        try:
+#            v = options['update_v'](v) # update v, e.g. simulate in fiber
+#        except KeyError:
+#            pass
+##     p_T = np.power(2.*np.pi*Tend.eval(),-.5*sigma.shape[0])/np.abs(np.linalg.det(sigma))*np.mean(np.exp(-Cgvs/(2.*Tend.eval()))*np.exp(log_varphis))
+#    return -.5*sigma.shape[0]*np.log(2.*np.pi*Tend.eval())-np.log(np.abs(np.linalg.det(sigma)))+np.log(np.mean(np.exp(-Cgvs/(2.*Tend.eval()))*np.exp(log_varphis)))
 

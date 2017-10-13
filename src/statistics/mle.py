@@ -26,7 +26,11 @@ def iterative_mle(obss,log_p_T,update_thetas,options):
 
         # initial thetas
         thetas = np.array(options['initial'])
-        print("initial thetas:", thetas)
+        try:
+            if options['verbose']:
+                print("initial thetas:", thetas)
+        except KeyError:
+            pass
 
         # iterations
         thetass = [np.zeros((options['epochs'],) + theta.shape) for theta in thetas]
@@ -48,8 +52,12 @@ def iterative_mle(obss,log_p_T,update_thetas,options):
             for j, theta in enumerate(thetas):
                 thetass[j][i] = theta
 
-            print("iteration: ", i, ", log-likelihood: ", log_likelihood)
-            print("thetas:", thetas)
+            try:
+                if options['verbose']:
+                    print("iteration: ", i, ", log-likelihood: ", log_likelihood)
+                    print("thetas:", thetas)
+            except KeyError:
+                pass
 
         return (thetas, log_likelihood, log_likelihoods, thetass)
     except:

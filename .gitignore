@@ -17,3 +17,6 @@ vagrant/*.log
 
 # pycharm
 .idea/
+
+# misc
+kent_distribution

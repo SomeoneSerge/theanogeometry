@@ -45,3 +45,6 @@ class S2(Ellipsoid):
         self.mu_Q_spherical = lambda x: 1./T.nlinalg.Det()(self.g_spherical(x))
         self.mu_Q_sphericalf = theano.function([x],self.mu_Q_spherical(x))
 
+    def __str__(self):
+        return "%dd sphere (ellipsoid parameters %s)" % (self.dim.eval(),self.params.eval())
+

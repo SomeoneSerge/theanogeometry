@@ -92,7 +92,7 @@ class SON(LieGroup):
         super(SON,self).initialize()
 
     def __str__(self):
-        return "SO(%d) (dimemsion %d)" % (self.N.eval(),self.dim.eval())
+        return "SO(%d) (dimension %d)" % (self.N.eval(),self.dim.eval())
 
     ### plotting
     import matplotlib.pyplot as plt
