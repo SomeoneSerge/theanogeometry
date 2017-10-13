@@ -212,7 +212,7 @@ def _zero_disconnected(outputs, grads):
             l.append(g)
     return l
 
-
+# The code is adopted from https://github.com/Theano/Theano/pull/3959
 class LogAbsDet(Op):
     """Computes the logarithm of absolute determinant of a square
     matrix M, log(abs(det(M))), on CPU. Avoids det(M) overflow/
@@ -236,8 +236,8 @@ class LogAbsDet(Op):
             raise
 
     def grad(self, inputs, g_outputs):
-        [gz] = g_outputs
-        [x] = inputs
+        gz, = g_outputs
+        x, = inputs
         return [gz * T.nlinalg.matrix_inverse(x).T]
 
     def __str__(self):

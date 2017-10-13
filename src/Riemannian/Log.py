@@ -18,24 +18,31 @@
 #
 
 from src.setup import *
-from src.params import *
+from src.utils import *
 
-class Euclidean(Manifold):
-    """ Euclidean space """
+def initialize(M):
+    """ numerical Riemannian Logarithm map """
 
-    def __init__(self,N=2):
-        Manifold.__init__(self)
-        self.dim = constant(N)
+    x = M.element()
+    y = M.element()
+    v = M.vector()
 
-        self.g = lambda x: T.eye(self.dim)
+    f = M.Exp
+    loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(f(x,v)-y))
+    dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
+    lossf = theano.function([x,v,y], loss(x,v,y))
+    dlossf = theano.function([x,v,y], dloss(x,v,y))
 
-        # action of matrix group on elements
-        x = self.element()
-        g = T.matrix() # group matrix
-        gs = T.tensor3() # sequence of matrices
-        self.act = lambda g,x: T.tensordot(g,x,(1,0))
-        self.actf = theano.function([g,x], self.act(g,x))
-        self.actsf = theano.function([gs,x], self.act(gs,x))
+    from scipy.optimize import minimize,fmin_bfgs,fmin_cg
+    def shoot(x,y,v0):
+        def f(w):
+            z = lossf(x,w,y)
+            dz = dlossf(x,w,y)
+            return (z,dz)
 
-    def __str__(self):
-        return "Euclidean manifold of dimension %d" % (self.dim.eval())
+        res = minimize(f, v0, method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
+
+        return(res.x,res.fun)
+
+    M.Logf = lambda x,y,v0: shoot(x,y,v0)
+

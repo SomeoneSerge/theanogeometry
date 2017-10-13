@@ -17,20 +17,23 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.group import *
-from src.metric import *
+from src.setup import *
 from src.utils import *
 
-#######################################################################
-# Brownian process with respect to left/right invariant metric        #
-#######################################################################
+def initialize(M):
+    x = M.element()
+    v = M.covector()
 
-assert(invariance == 'left')
+    def ode_geodesic(t,x):
+        dx2t = - T.tensordot(T.tensordot(x[1],
+                                         M.Gamma_g(x[0]), axes = [0,1]),
+                             x[1],axes = [1,0])
+        dx1t = x[1]
+        return T.stack((dx1t,dx2t))
 
-def sde_Brownian_process(dW,t,g):
-    X = T.tensordot(invpf(g,eiLA),sigma,(2,0))
-    det = T.zeros_like(g)
-    sto = T.tensordot(X,dW,(2,0))
-    return (det,sto,X)
-Brownian_process = lambda g,dWt: integrate_sde(sde_Brownian_process,integrator_stratonovich,g,dWt)
-Brownian_processf = theano.function([g,dWt], Brownian_process(g,dWt))
+    geodesic = lambda x,v: integrate(ode_geodesic, T.stack((x,v)))
+    M.Exp = lambda x,v: geodesic(x,v)[1][-1,0]
+    M.Expf = theano.function([x,v], M.Exp(x,v))
+    M.Expt = lambda x,v: geodesic(x,v)[1][:,0]
+    M.Exptf = theano.function([x,v], M.Expt(x,v))
+

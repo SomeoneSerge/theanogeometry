@@ -18,24 +18,24 @@
 #
 
 from src.setup import *
-from src.params import *
+from src.utils import *
 
-class Euclidean(Manifold):
-    """ Euclidean space """
+def initialize(M):
+    """ Riemannian parallel transport """
 
-    def __init__(self,N=2):
-        Manifold.__init__(self)
-        self.dim = constant(N)
+    d = M.dim
+    x = M.element()
+    u = M.frame()
 
-        self.g = lambda x: T.eye(self.dim)
+    def ode_parallel_transport(gamma,dgamma,t,x):
+        dpt = - T.tensordot(T.tensordot(dgamma, M.Gamma_g(gamma),axes = [0,1]),
+                            x, axes = [1,0])
+        return dpt
 
-        # action of matrix group on elements
-        x = self.element()
-        g = T.matrix() # group matrix
-        gs = T.tensor3() # sequence of matrices
-        self.act = lambda g,x: T.tensordot(g,x,(1,0))
-        self.actf = theano.function([g,x], self.act(g,x))
-        self.actsf = theano.function([gs,x], self.act(gs,x))
+    parallel_transport = lambda v,gamma,dgamma: integrate(ode_parallel_transport,v,gamma,dgamma)
+    M.parallel_transport = lambda v,gamma,dgamma: parallel_transport(v,gamma,dgamma)[1]
+    v = M.vector()
+    gamma = M.elements()
+    dgamma = M.vectors()
+    M.parallel_transportf = theano.function([v,gamma,dgamma], M.parallel_transport(v,gamma,dgamma))
 
-    def __str__(self):
-        return "Euclidean manifold of dimension %d" % (self.dim.eval())

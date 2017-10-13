@@ -17,41 +17,44 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.manifold import *
-from src.metric import *
-from src.Hamiltonian import *
+from src.setup import *
 
-def Frechet_mean(y,q0,p0,options=None):
-    
-    global steps
+def Frechet_mean(M, Logf, y, x0=None, options=None):
+    global _M # to avoid pickling M in multiprocess
+    _M = M
+
+    if x0 is None:
+        x0 = np.random.normal(size=M.dim.eval())
+
     steps = []
-    steps.append(q0)
+    steps.append(x0)
 
     def fopts(x):
-        res = 0.
-        grad = np.zeros(d.eval())
+        x = x.reshape(x0.shape)
         N = y.shape[0]
-        sol = mpu.pool.imap(lambda pars: (Logf(x,y[pars[0],:],p0)[0],),mpu.inputArgs(range(N)))
+        sol = mpu.pool.imap(lambda pars: (Logf(x,y[pars[0]],np.zeros(x.shape))[0],),mpu.inputArgs(range(N)))
         res = list(sol)
-        Logs = mpu.getRes(res,0)     
+        Logs = mpu.getRes(res,0)
+        #Logs = np.zeros((N, M.dim.eval()))
+        #for i in range(N):
+        #    Logs[i] = M.Logf(x, y[i], np.zeros(M.dim.eval()))[0]
 
-        res = (1./N)*np.sum(np.square(Logs))        
-        grad = -(2./N)*np.sum(Logs,0)
+        res = (1. / N) * np.sum(np.square(Logs))
+        grad = -(2. / N) * np.sum(Logs, 0)
 
-        return (res,grad)
+        return (res, grad)
 
     def save_step(k):
-        global steps
         steps.append(k)
-   
+
     try:
         mpu.openPool()
-        res = minimize(fopts, q0, method='BFGS', jac=True, options=options, callback=save_step)
+        res = minimize(fopts, x0, method='BFGS', jac=True, options=options, callback=save_step)
     except:
         mpu.closePool()
         raise
     else:
         mpu.closePool()
-    
-    return(res.x,res.fun,np.array(steps))
+
+    return (res.x, res.fun, np.array(steps))
 

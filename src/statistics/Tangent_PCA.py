@@ -17,25 +17,24 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from src.setup import *
-from src.params import *
+from src.utils import *
+from sklearn.decomposition import PCA
 
-class Euclidean(Manifold):
-    """ Euclidean space """
+def Tangent_PCA(y,mean,Logf,options=None):
+    try:
+        mpu.openPool()
+        N = y.shape[0]
+        sol = mpu.pool.imap(lambda pars: (Logf(mean,y[pars[0]],np.zeros(mean.shape))[0],),mpu.inputArgs(range(N)))
+        res = list(sol)
+        Logs = mpu.getRes(res,0)     
+    except:
+        mpu.closePool()
+        raise
+    else:
+        mpu.closePool()
 
-    def __init__(self,N=2):
-        Manifold.__init__(self)
-        self.dim = constant(N)
+    pca = PCA()
+    pca.fit(Logs)
 
-        self.g = lambda x: T.eye(self.dim)
-
-        # action of matrix group on elements
-        x = self.element()
-        g = T.matrix() # group matrix
-        gs = T.tensor3() # sequence of matrices
-        self.act = lambda g,x: T.tensordot(g,x,(1,0))
-        self.actf = theano.function([g,x], self.act(g,x))
-        self.actsf = theano.function([gs,x], self.act(gs,x))
-
-    def __str__(self):
-        return "Euclidean manifold of dimension %d" % (self.dim.eval())
+    return pca
+    

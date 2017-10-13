@@ -18,24 +18,24 @@
 #
 
 from src.setup import *
-from src.params import *
+from src.utils import *
 
-class Euclidean(Manifold):
-    """ Euclidean space """
+def initialize(M):
+    """ Riemannian curvature tensor """
 
-    def __init__(self,N=2):
-        Manifold.__init__(self)
-        self.dim = constant(N)
+    d = M.dim
+    x = M.element()
+    u = M.frame()
 
-        self.g = lambda x: T.eye(self.dim)
+    def R(x):
+        return T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(0,3,1,2) - T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(3,0,1,2) + T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) - T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
 
-        # action of matrix group on elements
-        x = self.element()
-        g = T.matrix() # group matrix
-        gs = T.tensor3() # sequence of matrices
-        self.act = lambda g,x: T.tensordot(g,x,(1,0))
-        self.actf = theano.function([g,x], self.act(g,x))
-        self.actsf = theano.function([gs,x], self.act(gs,x))
+    def R_u(x,u):
+        return T.tensordot(T.nlinalg.matrix_inverse(u),T.tensordot(R(x),u,(2,0)),(1,2)).dimshuffle(1,2,0,3)
 
-    def __str__(self):
-        return "Euclidean manifold of dimension %d" % (self.dim.eval())
+    M.R = R
+    M.Rf = theano.function([x], R(x))
+    M.R_u = R_u
+    M.R_uf = theano.function([x,u], R_u(x,u))
+
+

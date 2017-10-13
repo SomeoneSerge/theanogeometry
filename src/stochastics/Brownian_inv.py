@@ -18,22 +18,21 @@
 #
 
 from src.setup import *
-from src.params import *
+from src.utils import *
 
-import importlib
-globals().update(importlib.import_module('src.manifolds.'+manifold).__dict__)
-print("Manifold: ", manifold)
+def initialize(G):
+    """ Brownian motion with respect to left/right invariant metric """
 
-q = T.vector() # Point on M in coordinates
-q1 = T.vector() # Point on M in coordinates
-zeroU = T.zeros((d,)) # zero element in coordinates U
-X = T.vector() # Frame vector of T_qM
-p = T.vector() # Covector of T_qM.
-qp = T.matrix() # Matrix of p and q.
-#Method = T.fscalar()
-x = T.vector() # Point on M
-ui = T.matrix() # Frame of T_xM
-dW = T.matrix() # Process in R^n
-drift = T.vector() # Drift of stochastic process
-gamma = T.matrix() # curve in R^n
+    assert(G.invariance == 'left')
+
+    g = G.element() # \RR^{NxN} matrix
+
+    def sde_Brownian_inv(dW,t,g):
+        X = T.tensordot(G.invpf(g,G.eiLA),G.sigma,(2,0))
+        det = -.5*T.tensordot(T.diagonal(G.C,0,2).sum(1),X,(0,2))
+        sto = T.tensordot(X,dW,(2,0))
+        return (det,sto,X)
+    G.sde_Brownian_inv = sde_Brownian_inv
+    G.Brownian_inv = lambda g,dWt: integrate_sde(G.sde_Brownian_inv,integrator_stratonovich,g,dWt)
+    G.Brownian_invf = theano.function([g,dWt], G.Brownian_inv(g,dWt))
 

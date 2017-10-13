@@ -19,17 +19,19 @@
 
 from src.setup import *
 from src.utils import *
-from src.manifold import *
-from src.metric import *
 
-def ode_geodesic(t,x):
-    
-    dx2t = - T.tensordot(T.tensordot(x[1], Gamma_gM(x[0]), axes = [0,1]),
-                        x[1],axes = [1,0])
-    dx1t = x[1]
-    
-    return T.stack((dx1t,dx2t))
+def initialize(G):
+    """ Brownian motion with respect to left/right invariant metric """
 
-geo = lambda q,p: integrate(ode_geodesic, T.stack((q,p)))
-Expt = lambda q,p: geo(q,p)[1][:,0]
-Exptf = theano.function([q,p], Expt(q,p))
+    assert(G.invariance == 'left')
+
+    g = G.element() # \RR^{NxN} matrix
+
+    def sde_Brownian_process(dW,t,g):
+        X = T.tensordot(G.invpf(g,G.eiLA),G.sigma,(2,0))
+        det = T.zeros_like(g)
+        sto = T.tensordot(X,dW,(2,0))
+        return (det,sto,X)
+    G.sde_Brownian_process = sde_Brownian_process
+    G.Brownian_process = lambda g,dWt: integrate_sde(G.sde_Brownian_process,integrator_stratonovich,g,dWt)
+    G.Brownian_processf = theano.function([g,dWt], G.Brownian_process(g,dWt))

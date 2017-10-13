@@ -19,18 +19,25 @@
 
 from src.setup import *
 from src.params import *
-try:
-    from src.manifold import *
-except NameError:
-    pass
-try:
-    from src.group import *
-except NameError:
-    pass
+#try:
+#    from src.manifold import *
+#except NameError:
+#    pass
+#try:
+#    from src.group import *
+#except NameError:
+#    pass
 
 #######################################################################
 # various useful functions                                            #
 #######################################################################
+
+def constant(c):
+    """ return Theano constant with value of parameter c """
+    try:
+        return T.constant(c)
+    except:
+        return c
 
 # numeric optimizer
 def get_minimizer(f,method=None,options=None):
@@ -45,7 +52,7 @@ def get_minimizer(f,method=None,options=None):
 
 # Integrator (non-stochastic)
 def integrator(ode_f,method=default_method):
-    
+
     # euler:
     def euler(*y):
         t = y[-2]
@@ -84,17 +91,11 @@ def integrate(ode,x,*y):
 
 # standard noise realisations
 srng = RandomStreams()#seed=42)
-dWt = T.matrix() # n_steps x d or n_steps x G_dim
-try:
-    dWs = srng.normal((n_steps,d), std=np.sqrt(dt))
-    dWsf = theano.function([],dWs)
-except NameError:
-    pass
-try:
-    dWsG = srng.normal((n_steps,G_dim), std=np.sqrt(dt))
-    dWsGf = theano.function([],dWsG)
-except NameError:
-    pass
+dWt = T.matrix() # n_steps x d, d usually manifold dimension
+dWs = lambda d: srng.normal((n_steps,d), std=np.sqrt(dt))
+d = T.scalar(dtype='int64')
+dWsf = theano.function([d],dWs(d))
+del d
 
 def integrator_stratonovich(sde_f):
     def euler_heun(dW,t,x,*ys):
@@ -124,25 +125,25 @@ def integrate_sde(sde,integrator,x,dWt,*ys):
             n_steps=n_steps)
     return cout
 
-# Gram-Schmidt:
-def GramSchmidt_f(innerProd):
-    def GS(Frame,q):
-        
-        if len(Frame.shape) == 1:
-            gS = Frame/np.sqrt(innerProd(Frame,Frame,q))
-        else:
-            gS = np.zeros_like(Frame)
-            for j in range(0,Frame.shape[1]):
-                gS[:,j] = Frame[:,j]
-                for i in range(0,j):
-                    foo = innerProd(Frame[:,j],gS[:,i],q)/ innerProd(gS[:,i],gS[:,i],q)
-                    gS[:,j] = gS[:,j] - foo*gS[:,i]
-        
-                gS[:,j] = gS[:,j]/np.sqrt(innerProd(gS[:,j],gS[:,j],q))
-
-        return gS
-
-    return GS
+## Gram-Schmidt:
+#def GramSchmidt_f(innerProd):
+#    def GS(Frame,q):
+#
+#        if len(Frame.shape) == 1:
+#            gS = Frame/np.sqrt(innerProd(Frame,Frame,q))
+#        else:
+#            gS = np.zeros_like(Frame)
+#            for j in range(0,Frame.shape[1]):
+#                gS[:,j] = Frame[:,j]
+#                for i in range(0,j):
+#                    foo = innerProd(Frame[:,j],gS[:,i],q)/ innerProd(gS[:,i],gS[:,i],q)
+#                    gS[:,j] = gS[:,j] - foo*gS[:,i]
+#
+#                gS[:,j] = gS[:,j]/np.sqrt(innerProd(gS[:,j],gS[:,j],q))
+#
+#        return gS
+#
+#    return GS
 
 
 

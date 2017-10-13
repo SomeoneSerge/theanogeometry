@@ -12,5 +12,12 @@ pip-*
 share/
 
 # vagrant
+vagrant/
 vagrant/.vagrant/
 vagrant/*.log
+
+# pycharm
+.idea/
+
+# misc
+kent_distribution
