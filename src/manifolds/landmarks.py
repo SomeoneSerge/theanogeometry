@@ -134,13 +134,13 @@ class landmarks(Manifold):
     plotGrid(grid,Nx,Ny)
     """
 
-    def d2zip(grid):
+    def d2zip(self,grid):
         return np.dstack(grid).reshape([-1,2])
 
-    def d2unzip(points,Nx,Ny):
+    def d2unzip(self,points,Nx,Ny):
         return np.array([points[:,0].reshape(Nx,Ny),points[:,1].reshape(Nx,Ny)])
 
-    def getGrid(xmin,xmax,ymin,ymax,xres=None,yres=None,xpts=None,ypts=None):
+    def getGrid(self,xmin,xmax,ymin,ymax,xres=None,yres=None,xpts=None,ypts=None):
         """
         Make regular grid
         Grid spacing is determined either by (x|y)res or (x|y)pts
@@ -163,10 +163,10 @@ class landmarks(Manifold):
         Nx = grid.shape[1]
         Ny = grid.shape[2]
 
-        return (d2zip(grid),Nx,Ny)
+        return (self.d2zip(grid),Nx,Ny)
 
 
-    def plotGrid(grid,Nx,Ny,coloring=True):
+    def plotGrid(self,grid,Nx,Ny,coloring=True):
         """
         Plot grid
         """
@@ -175,7 +175,7 @@ class landmarks(Manifold):
         ymin = grid[:,1].min(); ymax = grid[:,1].max()
         border = .5*(0.2*(xmax-xmin)+0.2*(ymax-ymin))
 
-        grid = d2unzip(grid,Nx,Ny)
+        grid = self.d2unzip(grid,Nx,Ny)
 
         color = 0.75
         colorgrid = np.full([Nx,Ny],color)

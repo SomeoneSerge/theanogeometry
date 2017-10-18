@@ -26,6 +26,9 @@ class Manifold(object):
     def __init__(self):
         self.dim = None
 
+    def __init__(self):
+        self.rank = None
+
     def element(self):
         """ return symbolic element in manifold """
         return T.vector()
@@ -60,6 +63,10 @@ class Manifold(object):
 
     def frame(self):
         """ return symbolic frame for tangent space """
+        return T.matrix()
+
+    def process(self):
+        """ return symbolic steps of process """
         return T.matrix()
 
     def __str__(self):

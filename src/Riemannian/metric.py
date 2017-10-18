@@ -70,8 +70,7 @@ def initialize(M):
     M.dotsharp = lambda x,p,pp: T.dot(T.dot(M.gsharp(x),pp),p)
     M.dotsharpf = theano.function([x,p,pp],M.dotsharp(x,pp,p))
 
-    #def GramSchmidt(u,q):
-    #    return (GramSchmidt_f(innerProd))(u,q)
+    M.gramSchmidt = lambda x,u: (GramSchmidt_f(M.dotf))(x,u)
 
     ##### Hamiltonian
     q = M.element()

@@ -17,22 +17,18 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-#from src.group import *
 from src.setup import *
 from src.utils import *
-#from src.manifold import *
-#from src.metric import *
-#from src.stochastic import Stochastic_Development import *
 
 def initialize(M):
-    """ Numerical Brownian motion based on Stochastic development """
 
-    def SD_brownian(q,dim=2,dWt=None):
-    
-        if dWt is None:
-            dWt = np.random.normal(0, np.sqrt(dt.eval()), (n_steps.get_value(),dim))
+    xs = T.matrix() # point to be advected with flow
+    qt = T.matrix() # fixed flow, q part
+    pt = T.matrix() # fixed flow, p part
 
-        xs = M.stoc_devf(q,dWt,np.zeros(d.eval()))
-    
-        return xs
+    def ode_Ham_advect(q,p,t,x):
+        dxt = T.tensordot(M.K(x,q.reshape((-1,M.m))),p,(1,0)).reshape((-1,M.m))
+        return dxt
 
+    M.Ham_advect = lambda xs,qt,pt: integrate(ode_Ham_advect,xs,qt,pt)
+    M.Ham_advectf = theano.function([xs,qt,pt], M.Ham_advect(xs,qt,pt))

@@ -35,6 +35,7 @@ class Ellipsoid(EmbeddedManifold):
         self.dim = constant(2)
         self.emb_dim = constant(3)
         self.params = theano.shared(np.array(params)) # ellipsoid parameters (e.g. [1.,1.,1.] for sphere)
+        self.rank = constant(2)
 
         ## map F stereographic R2_r\rightarrow R3_s
         x = self.coords()
@@ -161,84 +162,82 @@ class Ellipsoid(EmbeddedManifold):
 
 
 
+    ##### Geodesics (FM):
+    ## Plot of geodesic Sphere
+    def plotFMx(self,q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,s=15.,prevx=None,last=True):
+            if len(q.shape)>1:
+                for i in range(q.shape[0]):
+                    self.plotFMx(q[i],
+                          N_vec=N_vec,i0=i,
+                          color=color,
+                          linewidth=linewidth if i==0 or i==q.shape[0]-1 else .8,
+                          color_intensity=color_intensity if i==0 or i==q.shape[0]-1 else .7,
+                          prevx=q[i-1] if i>0 else None,
+                          last=i==(q.shape[0]-1))
+                return
 
+            x = q[0:self.dim.eval()]
+            ui = q[self.dim.eval():].reshape((self.dim.eval(),2))
+        
+            xq = x
+            if x.shape[0] < 3: # map to S2
+                x = self.Ff(x)
+         
+            ax = plt.gca(projection='3d')
+            if prevx is None or last:
+                ax.scatter(x[0],x[1],x[2],color=color)
+            if prevx is not None:
+                prevxx = prevx[0:self.dim.eval()]
+                if prevxx.shape[0] < 3:
+                    prevxx = self.Ff(prevxx)
+                xx = np.stack((prevxx,x))
+                ax.plot(xx[:,0],xx[:,1],xx[:,2],linewidth=linewidth,color=color)
+        
+            # Frame along curve:
+            if N_vec is not None:
+                Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
+                Seqv = Seq(N_vec,n_steps.get_value())
+                if i0 in Seqv:
+                    for j in range(self.dim.eval()):
+                            JFgammai = self.JFf(xq)
+                            uiq = np.dot(JFgammai,ui[j,:])
+                            ax.quiver(x[0],x[1],x[2],uiq[0],uiq[1],uiq[2], pivot='tail',
+                                  arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
+                                color='black')
 
-##### Geodesics (FM):
-## Plot of geodesic in R^2:
-#def plotR2FMx(q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,prevx=None,last=True):
-#    if len(q.shape)>1:
-#        for i in range(q.shape[0]):
-#            plotR2FMx(q[i],
-#                      N_vec=N_vec,i0=i,
-#                      color=color,
-#                      linewidth=linewidth if i==0 or i==q.shape[0]-1 else .8,
-#                      color_intensity=color_intensity if i==0 or i==q.shape[0]-1 else .7,
-#                      prevx=q[i-1] if i>0 else None,
-#                      last=i==(q.shape[0]-1))
-#        return
-#
-#    x = q[0:d.eval()]
-#    ui = q[d.eval():].reshape((d.eval(),2)) 
-#    
-#    if prevx is None or last:
-#        plt.scatter(x[0],x[1])
-#    if prevx is not None:
-#        prevxx = prevx[0:d.eval()]
-#        xx = np.stack((prevxx,x))
-#        plt.plot(xx[:,0],xx[:,1],linewidth=linewidth,color=color)
-#    
-#    # Frame along curve:
-#    if N_vec is not None:
-#        Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
-#        Seqv = Seq(N_vec,n_steps.get_value())
-#        if i0 in Seqv:
-#            for j in range(d.eval()):
-#                plt.quiver(x[0],x[1],ui[0],ui[1], pivot='tail',
-#                           linewidth=linewidth,scale=5,color='black')
-#
-## Plot of geodesic Sphere
-#def plotFMx(q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,s=15.,prevx=None,last=True):
-#        if len(q.shape)>1:
-#            for i in range(q.shape[0]):
-#                plotFMx(q[i],
-#                      N_vec=N_vec,i0=i,
-#                      color=color,
-#                      linewidth=linewidth if i==0 or i==q.shape[0]-1 else .8,
-#                      color_intensity=color_intensity if i==0 or i==q.shape[0]-1 else .7,
-#                      prevx=q[i-1] if i>0 else None,
-#                      last=i==(q.shape[0]-1))
-#            return
-#
-#        x = q[0:d.eval()]
-#        ui = q[d.eval():].reshape((d.eval(),2))
-#        
-#        xq = x
-#        if x.shape[0] < 3: # map to S2
-#            x = Ff(x)
-#         
-#        ax = plt.gca(projection='3d')
-#        if prevx is None or last:
-#            ax.scatter(x[0],x[1],x[2],color=color)
-#        if prevx is not None:
-#            prevxx = prevx[0:d.eval()]
-#            if prevxx.shape[0] < 3:
-#                prevxx = Ff(prevxx)
-#            xx = np.stack((prevxx,x))
-#            ax.plot(xx[:,0],xx[:,1],xx[:,2],linewidth=linewidth,color=color)
-#        
-#        # Frame along curve:
-#        if N_vec is not None:
-#            Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
-#            Seqv = Seq(N_vec,n_steps.get_value())
-#            if i0 in Seqv:
-#                for j in range(d.eval()):
-#                        JFgammai = JFf(xq)
-#                        uiq = np.dot(JFgammai,ui[j,:])
-#                        ax.quiver(x[0],x[1],x[2],uiq[0],uiq[1],uiq[2], pivot='tail',
-#                              arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
-#                              color='black')
-#
-#### Plot of curvature:
+    ## Plot of geodesic in R^2:
+    def plotR2FMx(self,q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,prevx=None,last=True):
+        if len(q.shape)>1:
+            for i in range(q.shape[0]):
+                self.plotR2FMx(q[i],
+                          N_vec=N_vec,i0=i,
+                          color=color,
+                          linewidth=linewidth if i==0 or i==q.shape[0]-1 else .8,
+                          color_intensity=color_intensity if i==0 or i==q.shape[0]-1 else .7,
+                          prevx=q[i-1] if i>0 else None,
+                          last=i==(q.shape[0]-1))
+            return
+
+        x = q[0:self.dim.eval()]
+        ui = q[self.dim.eval():].reshape((self.dim.eval(),2)) 
+    
+        if prevx is None or last:
+            plt.scatter(x[0],x[1])
+        if prevx is not None:
+            prevxx = prevx[0:self.dim.eval()]
+            xx = np.stack((prevxx,x))
+            plt.plot(xx[:,0],xx[:,1],linewidth=linewidth,color=color)
+    
+        # Frame along curve:
+        if N_vec is not None:
+            Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
+            Seqv = Seq(N_vec,n_steps.get_value())
+            if i0 in Seqv:
+                for j in range(self.dim.eval()):
+                    plt.quiver(x[0],x[1],ui[0],ui[1], pivot='tail',
+                               linewidth=linewidth,scale=5,color='black')
+
+##### Plot of curvature:
 #def plotCur(q,v0,v1,color='b'):
 #
 #        x = q[0:d.eval()]

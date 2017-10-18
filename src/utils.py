@@ -126,24 +126,24 @@ def integrate_sde(sde,integrator,x,dWt,*ys):
     return cout
 
 ## Gram-Schmidt:
-#def GramSchmidt_f(innerProd):
-#    def GS(Frame,q):
-#
-#        if len(Frame.shape) == 1:
-#            gS = Frame/np.sqrt(innerProd(Frame,Frame,q))
-#        else:
-#            gS = np.zeros_like(Frame)
-#            for j in range(0,Frame.shape[1]):
-#                gS[:,j] = Frame[:,j]
-#                for i in range(0,j):
-#                    foo = innerProd(Frame[:,j],gS[:,i],q)/ innerProd(gS[:,i],gS[:,i],q)
-#                    gS[:,j] = gS[:,j] - foo*gS[:,i]
-#
-#                gS[:,j] = gS[:,j]/np.sqrt(innerProd(gS[:,j],gS[:,j],q))
-#
-#        return gS
-#
-#    return GS
+def GramSchmidt_f(innerProd):
+    def GS(q,Frame):
+
+        if len(Frame.shape) == 1:
+            gS = Frame/np.sqrt(innerProd(q,Frame,Frame))
+        else:
+            gS = np.zeros_like(Frame)
+            for j in range(0,Frame.shape[1]):
+                gS[:,j] = Frame[:,j]
+                for i in range(0,j):
+                    foo = innerProd(q,Frame[:,j],gS[:,i])/ innerProd(q,gS[:,i],gS[:,i])
+                    gS[:,j] = gS[:,j] - foo*gS[:,i]
+
+                gS[:,j] = gS[:,j]/np.sqrt(innerProd(q,gS[:,j],gS[:,j]))
+
+        return gS
+
+    return GS
 
 
 
