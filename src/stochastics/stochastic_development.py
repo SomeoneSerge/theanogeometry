@@ -23,11 +23,12 @@ from src.utils import *
 
 def initialize(M):
 
-    from src.framebundle import FM
-    FM.initialize(M)
+    #from src.framebundle import FM
+    #FM.initialize(M)
     
     d = M.dim
     m = M.rank
+    n = M.N
 
     dgamma = M.process() # deterministic curve
     dW = M.process() # stochastic process
@@ -37,10 +38,12 @@ def initialize(M):
     ## Development: (Deterministic)
     def ode_Dev(dgamma,t,q):
     
-        x = q[0:d]
-        ui = q[d:(d+m*d)].reshape((d,m))
+        dgamma1 = T.tile(T.repeat(dgamma.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
 
-        det = T.tensordot(Hori(x,ui), dgamma, axes = [1,0])
+        x = q[0:d]
+        ui = q[d:(d+n*d)].reshape((d,n))
+
+        det = T.tensordot(M.Hori(x,ui), dgamma1, axes = [1,0])
     
         return det
 
@@ -49,12 +52,15 @@ def initialize(M):
 
     # Stochastic Development:
     def sde_SD(dWt,t,q,drift):
-    
+        
+        dWt1 = T.tile(T.repeat(dWt.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
+        drift1 = T.tile(T.repeat(drift.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
+        
         x = q[0:d]
-        ui = q[d:(d+rank*d)].reshape((d,rank))
+        ui = q[d:(d+n*d)].reshape((d,n))
 
-        det = T.tensordot(Hori(x,ui), drift, axes = [1,0]) 
-        sto = T.tensordot(Hori(x,ui), dWt, axes = [1,0])
+        det = T.diagonal(T.tensordot(M.Hori(x,ui), drift1, axes = [1,0]))
+        sto = T.diagonal(T.tensordot(M.Hori(x,ui), dWt1, axes = [1,0]))
     
         return (det, sto, T.constant(0.), T.constant(0.))
 

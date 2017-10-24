@@ -27,7 +27,7 @@ def initialize(M):
     """ Frame bundle geometry """ 
     
     d  = M.dim
-    m = M.rank # dimension used for development
+    r = M.rank # dimension used for development
 
     x = M.element()
     x1 = M.element()
@@ -40,7 +40,7 @@ def initialize(M):
     def gFMsharp(u):
     
         x = u[0:d]
-        ui = u[d:].reshape((d,m))
+        ui = u[d:].reshape((d,M.m))
         GamX = T.tensordot(M.Gamma_g(x), ui, 
                            axes = [2,0]).dimshuffle(0,2,1)
     
@@ -84,8 +84,8 @@ def initialize(M):
     
         return 0.5*(xigxi + xigxia + xiagxi + xiagxia)
 
-    M.Hfm = lambda q,p: Hsplit(q[0:d],q[d:(d+m*d)].reshape((d,m)),\
-                               p[0:d],p[d:(d+m*d)].reshape((d,m)))
+    M.Hfm = lambda q,p: Hsplit(q[0:d],q[d:(d+M.m*d)].reshape((d,M.m)),\
+                               p[0:d],p[d:(d+M.m*d)].reshape((d,M.m)))
     M.Hfmf = theano.function([q,p],M.Hfm(q,p))
 
     ##### Evolution equations:
@@ -116,7 +116,7 @@ def initialize(M):
             y = M.lossf(x,x1,v)
             return y
 
-        res = minimize(fopts, np.zeros([d.eval()+m.eval()*d.eval()]), 
+        res = minimize(fopts, np.zeros([d.eval()+M.m.eval()*d.eval()]), 
                        method='CG', jac=False, options={'disp': False, 
                                                         'maxiter': 50})
         return res.x
@@ -132,6 +132,6 @@ def initialize(M):
         duv = du.reshape((u.shape[1],du.shape[1]*du.shape[2]))
 
         return T.concatenate([dx,duv.T], axis = 0)
-
-    M.Horif = theano.function([x,u],Hori(x,u))
+    M.Hori = Hori
+    M.Horif = theano.function([x,u],M.Hori(x,u))
 

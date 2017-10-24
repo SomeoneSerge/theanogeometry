@@ -33,6 +33,7 @@ class landmarks(Manifold):
         self.N = theano.shared(N) # number of landmarks
         self.m = constant(m) # landmark space dimension (usually 2 or 3
         self.dim = self.m*self.N
+        self.rank = theano.shared(self.dim.eval())
 
         self.k_alpha = theano.shared(k_alpha)
         self.k_sigma = theano.shared(k_sigma) # standard deviation of the kernel
@@ -91,38 +92,38 @@ class landmarks(Manifold):
             plt.plot(np.hstack((x[:,0],x[0,0])),np.hstack((x[:,1],x[0,1])),'o-',color=color)
 
     # plot point in frame bundle FM
-    def plotFMx(self, q,N_vec=None,i0=0,color='b',scale=10,color_intensity=1.,linewidth=3.,prevx=None,last=True):
+    def plotFMx(self,q,N_vec=None,i0=0,color='b',s=10,color_intensity=1.,linewidth=3.,prevx=None,last=True):
 
         if len(q.shape)>1:
             for i in range(q.shape[0]):
                 self.plotFMx(q[i],
                         N_vec=N_vec,i0=i,
-                        color=color,scale=scale,
+                        color=color, s=s,
                         linewidth=linewidth if i==0 or i==q.shape[0]-1 else .8,
                         color_intensity=color_intensity if i==0 or i==q.shape[0]-1 else .7,
                         prevx=q[i-1] if i>0 else None,
                         last=i==(q.shape[0]-1))
             return
 
-        x = q[0:d.eval()].reshape((N.get_value(),2))
-        ui = q[d.eval():].reshape((N.get_value(),rank.eval(),2))
+        x = q[0:self.dim.eval()].reshape((self.N.eval(),2))
+        ui = q[self.dim.eval():].reshape((self.m.eval(),self.N.eval(),self.m.eval()))
 
-        for j in range(N.get_value()):
+        for j in range(self.N.eval()):
             if prevx is None or last:
                 plt.scatter(x[j,0],x[j,1],color=color)
             if prevx is not None:
-                prevxx = prevx[0:d.eval()].reshape((N.get_value(),2))
+                prevxx = prevx[0:self.dim.eval()].reshape((self.N.eval(),2))
                 xx = np.stack((prevxx[j,:],x[j,:]))
                 plt.plot(xx[:,0],xx[:,1],linewidth=linewidth,color=color)
 
             if N_vec is not None:
                 Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
-                Seqv = np.hstack((0,Seq(N_vec,n_steps.get_value())))
+                Seqv = np.hstack((0,Seq(N_vec,n_steps.eval())))
                 if i0 in Seqv:
                     plt.quiver(x[j,0],x[j,1],ui[j,0,0],
-                               ui[j,0,1],pivot='tail',linewidth=linewidth,scale=scale)
+                               ui[j,0,1],pivot='tail',linewidth=linewidth,scale=s)
                     plt.quiver(x[j,0],x[j,1],ui[j,1,0],
-                               ui[j,1,1], pivot='tail',linewidth=linewidth,scale=scale)
+                               ui[j,1,1], pivot='tail',linewidth=linewidth,scale=s)
 
 
     # grid plotting functions

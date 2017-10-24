@@ -24,6 +24,8 @@ def initialize(M):
     """ Brownian motion in coordinates """
 
     x = M.element()
+    dW = M.element()
+    t = T.scalar()
 
     def sde_Brownian_coords(dW,t,q):
         gsharpq = M.gsharp(q)
@@ -32,6 +34,7 @@ def initialize(M):
         sto = T.tensordot(X,dW,(1,0))
         return (det,sto,X)
     M.sde_Brownian_coords = sde_Brownian_coords
+    M.sde_Brownian_coordsf = theano.function([dW,t,x], M.sde_Brownian_coords(dW,t,x), on_unused_input = 'ignore') 
     M.Brownian_coords = lambda x,dWt: integrate_sde(sde_Brownian_coords,integrator_ito,x,dWt)
     M.Brownian_coordsf = theano.function([x,dWt], M.Brownian_coords(x,dWt))
 
