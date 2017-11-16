@@ -23,7 +23,7 @@ from src.utils import *
 def initialize(G):
     """ Brownian motion with respect to left/right invariant metric """
 
-    assert(G.invariance == 'left')
+    #assert(G.invariance == 'left')
 
     g = G.element() # \RR^{NxN} matrix
 
