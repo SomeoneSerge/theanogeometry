@@ -28,7 +28,7 @@ def initialize(M):
     
     d = M.dim
     m = M.rank
-    n = M.N
+    #n = M.N
 
     dgamma = M.process() # deterministic curve
     dW = M.process() # stochastic process
@@ -38,12 +38,13 @@ def initialize(M):
     ## Development: (Deterministic)
     def ode_Dev(dgamma,t,q):
     
-        dgamma1 = T.tile(T.repeat(dgamma.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
+        dgamma1 = dgamma #T.tile(T.repeat(dgamma.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
 
         x = q[0:d]
-        ui = q[d:(d+n*d)].reshape((d,n))
+        ui = q[d:(d+d*d)].reshape((d,d)) #q[d:(d+n*d)].reshape((d,d))
+        m = dgamma.shape[0]
 
-        det = T.tensordot(M.Hori(x,ui), dgamma1, axes = [1,0])
+        det = T.tensordot(M.Hori(x,ui)[:,0:m], dgamma1, axes = [1,0])
     
         return det
 
@@ -53,14 +54,15 @@ def initialize(M):
     # Stochastic Development:
     def sde_SD(dWt,t,q,drift):
         
-        dWt1 = T.tile(T.repeat(dWt.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
-        drift1 = T.tile(T.repeat(drift.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
+        dWt1 = dWt#T.tile(T.repeat(dWt.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
+        drift1 = drift #T.tile(T.repeat(drift.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
         
         x = q[0:d]
-        ui = q[d:(d+n*d)].reshape((d,n))
+        ui = q[d:(d+d*d)].reshape((d,d)) #q[d:(d+n*d)].reshape((d,n))
+        m = dWt1.shape[0]
 
-        det = T.diagonal(T.tensordot(M.Hori(x,ui), drift1, axes = [1,0]))
-        sto = T.diagonal(T.tensordot(M.Hori(x,ui), dWt1, axes = [1,0]))
+        det = T.tensordot(M.Hori(x,ui)[:,0:m], drift1, axes = [1,0]) #T.diagonal(T.tensordot(M.Hori(x,ui), drift1, axes = [1,0]))
+        sto = T.tensordot(M.Hori(x,ui)[:,0:m], dWt1, axes = [1,0]) #T.diagonal(T.tensordot(M.Hori(x,ui), dWt1, axes = [1,0]))
     
         return (det, sto, T.constant(0.), T.constant(0.))
 

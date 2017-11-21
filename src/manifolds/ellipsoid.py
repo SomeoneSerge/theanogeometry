@@ -35,7 +35,7 @@ class Ellipsoid(EmbeddedManifold):
         self.dim = constant(2)
         self.emb_dim = constant(3)
         self.params = theano.shared(np.array(params)) # ellipsoid parameters (e.g. [1.,1.,1.] for sphere)
-        self.rank = theano.shared(2)
+        #self.m = theano.shared(m)
 
         ## map F stereographic R2_r\rightarrow R3_s
         x = self.coords()
