@@ -45,7 +45,6 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
         sqrtCovx = sqrtCov(x)
         Cov = dt * T.tensordot(sqrtCovx, sqrtCovx, (1, 1))
         Pres = T.nlinalg.MatrixInverse()(Cov)
-        residual = T.dot(dW_guided, Pres * dW_guided)
         residual = T.tensordot(dW_guided, T.tensordot(Pres, dW_guided, (1, 0)), (0, 0))
         log_likelihood = .5 * (-dW.shape[0] * T.log(2 * np.pi) + LogAbsDet()(Pres) - residual)
 
@@ -75,7 +74,6 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
                                    # last term in divison is to avoid NaN with non-lazy Theano conditional evaluation
                                    0.)
         log_varphi = t2 + t34
-        log_varphi = T.constant(0.)
 
         return (det + T.tensordot(X, h, 1), sto, X, log_likelihood, log_varphi, T.zeros_like(v), *dys_sde)
 

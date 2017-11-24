@@ -44,6 +44,51 @@ def get_sde_fiber(sde_f,proj,G,M):
 
     return sde_fiber
 
+def get_sde_horz(sde_f,proj,G,M):
+    def sde_horz(dW,t,x,*ys):
+        (det,sto,X,*dys_sde) = sde_f(dW,t,x,*ys)
+        
+        # compute kernel of proj derivative with respect to inv A metric
+        rank = M.dim
+        Xframe = T.tensordot(G.invpf(x,G.eiLA),G.sigma,(2,0))
+        Xframe_inv = T.nlinalg.MatrixPinv()(Xframe.reshape((-1,G.dim)))
+        dproj = T.tensordot(T.jacobian(proj(x).flatten(),x),
+                            Xframe,
+                           ((1,2),(0,1))).reshape((proj(x).shape[0],G.dim))
+        (_,_,Vh) = T.nlinalg.svd(dproj,full_matrices=True)
+        horz = Vh[0:rank].T # horz space
+        proj_horz = T.tensordot(horz,horz,(1,1))
+        
+        det = T.tensordot(Xframe,T.tensordot(proj_horz,T.tensordot(Xframe_inv,det.flatten(),(1,0)),(1,0)),(2,0)).reshape(x.shape)
+        sto = T.tensordot(Xframe,T.tensordot(proj_horz,T.tensordot(Xframe_inv,sto.flatten(),(1,0)),(1,0)),(2,0)).reshape(x.shape)
+        X = T.tensordot(Xframe,T.tensordot(proj_horz,T.tensordot(Xframe_inv,X.flatten(),(1,0)),(1,0)),(2,0)).reshape(X.shape)
+        
+        return (det,sto,X,*dys_sde)
+
+    return sde_horz
+
+def get_sde_lifted(sde_f,proj,G,M):
+    def sde_lifted(dW,t,x,*ys):
+        (det,sto,X,*dys_sde) = sde_f(dW,t,proj(x),*ys)
+        
+        # compute kernel of proj derivative with respect to inv A metric
+        rank = M.dim
+        Xframe = T.tensordot(G.invpf(x,G.eiLA),G.sigma,(2,0))
+        Xframe_inv = T.nlinalg.MatrixPinv()(Xframe.reshape((-1,G.dim)))
+        dproj = T.tensordot(T.jacobian(proj(x).flatten(),x),
+                            Xframe,
+                           ((1,2),(0,1))).reshape((proj(x).shape[0],G.dim))
+        (_,_,Vh) = T.nlinalg.svd(dproj,full_matrices=True)
+        horz = Vh[0:rank].T # basis for horz space
+        
+        det = T.tensordot(Xframe,T.tensordot(horz,T.tensordot(Xframe_inv,det.flatten(),(1,0)),(1,0)),(2,0)).reshape(x.shape)
+        sto = T.tensordot(Xframe,T.tensordot(horz,T.tensordot(Xframe_inv,sto.flatten(),(1,0)),(1,0)),(2,0)).reshape(x.shape)
+        X = T.tensordot(Xframe,T.tensordot(horz,T.tensordot(Xframe_inv,X.flatten(),(1,0)),(1,0)),(2,0)).reshape(X.shape)
+        
+        return (det,sto,X,*dys_sde)
+
+    return sde_lifted
+
 # find g in fiber above x closests to g0
 from scipy.optimize import minimize
 def lift_to_fiber(x,x0,G,M):
