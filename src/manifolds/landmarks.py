@@ -92,7 +92,7 @@ class landmarks(Manifold):
             plt.plot(np.hstack((x[:,0],x[0,0])),np.hstack((x[:,1],x[0,1])),'o-',color=color)
 
     # plot point in frame bundle FM
-    def plotFMx(self,q,N_vec=None,i0=0,color='b',s=10,color_intensity=1.,linewidth=3.,prevx=None,last=True):
+    def plotFMx(self,q,N_vec=None,i0=0,color=np.array(['g','b']),s=10,color_intensity=1.,linewidth=3.,prevx=None,last=True):
 
         if len(q.shape)>1:
             for i in range(q.shape[0]):
@@ -106,24 +106,24 @@ class landmarks(Manifold):
             return
 
         x = q[0:self.dim.eval()].reshape((self.N.eval(),2))
-        ui = q[self.dim.eval():].reshape((self.m.eval(),self.N.eval(),self.m.eval()))
+        #ui = q[self.dim.eval():].reshape((self.m.eval(),self.N.eval(),self.d.eval()))
 
         for j in range(self.N.eval()):
             if prevx is None or last:
-                plt.scatter(x[j,0],x[j,1],color=color)
+                plt.scatter(x[j,0],x[j,1],color=color[0])
             if prevx is not None:
                 prevxx = prevx[0:self.dim.eval()].reshape((self.N.eval(),2))
                 xx = np.stack((prevxx[j,:],x[j,:]))
-                plt.plot(xx[:,0],xx[:,1],linewidth=linewidth,color=color)
+                plt.plot(xx[:,0],xx[:,1],linewidth=linewidth,color=color[1])
 
-            if N_vec is not None:
-                Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
-                Seqv = np.hstack((0,Seq(N_vec,n_steps.eval())))
-                if i0 in Seqv:
-                    plt.quiver(x[j,0],x[j,1],ui[j,0,0],
-                               ui[j,0,1],pivot='tail',linewidth=linewidth,scale=s)
-                    plt.quiver(x[j,0],x[j,1],ui[j,1,0],
-                               ui[j,1,1], pivot='tail',linewidth=linewidth,scale=s)
+            #if N_vec is not None:
+            #    Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
+            #    Seqv = np.hstack((0,Seq(N_vec,n_steps.eval())))
+            #    if i0 in Seqv:
+            #        plt.quiver(x[j,0],x[j,1],ui[j,0,0],
+            #                   ui[j,0,1],pivot='tail',linewidth=linewidth,scale=s)
+            #        plt.quiver(x[j,0],x[j,1],ui[j,1,0],
+            #                   ui[j,1,1], pivot='tail',linewidth=linewidth,scale=s)
 
 
     # grid plotting functions

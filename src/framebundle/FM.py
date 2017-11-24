@@ -40,7 +40,7 @@ def initialize(M):
     def gFMsharp(u):
     
         x = u[0:d]
-        ui = u[d:].reshape((d,M.m))
+        ui = u[d:].reshape((d,d))#.reshape((d,M.m))
         GamX = T.tensordot(M.Gamma_g(x), ui, 
                            axes = [2,0]).dimshuffle(0,2,1)
     
@@ -84,8 +84,10 @@ def initialize(M):
     
         return 0.5*(xigxi + xigxia + xiagxi + xiagxia)
 
-    M.Hfm = lambda q,p: Hsplit(q[0:d],q[d:(d+M.m*d)].reshape((d,M.m)),\
-                               p[0:d],p[d:(d+M.m*d)].reshape((d,M.m)))
+    M.Hfm = lambda q,p: Hsplit(q[0:d],q[d:(d+d*d)].reshape((d,d)),\
+                               p[0:d],p[d:(d+d*d)].reshape((d,d)))
+# Hsplit(q[0:d],q[d:(d+M.m*d)].reshape((d,M.m)),\
+                       #        p[0:d],p[d:(d+M.m*d)].reshape((d,M.m)))
     M.Hfmf = theano.function([q,p],M.Hfm(q,p))
 
     ##### Evolution equations:

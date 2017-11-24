@@ -28,7 +28,8 @@ def initialize(M):
     u = M.frame()
     e1 = M.vector()
     e2 = M.vector()
-
+    
+    # Riemannian Curvature tensor: (coordinates are m,i,j,k where m is the upper index)
     def R(x):
         return T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(0,3,1,2) - T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(3,0,1,2) + T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) - T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
 
