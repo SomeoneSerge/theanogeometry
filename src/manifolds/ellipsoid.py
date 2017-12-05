@@ -71,9 +71,9 @@ class Ellipsoid(EmbeddedManifold):
         ax.xaxis._axinfo["grid"]['linewidth'] = lw
         ax.yaxis._axinfo["grid"]['linewidth'] = lw
         ax.zaxis._axinfo["grid"]['linewidth'] = lw
-    #    ax.set_xlim(-1.5,1.5)
-    #    ax.set_ylim(-1.5,1.5)
-    #    ax.set_zlim(-1.5,1.5)
+        ax.set_xlim(-1.,1.)
+        ax.set_ylim(-1.,1.)
+        ax.set_zlim(-1.,1.)
         ax.set_aspect("equal")
         if rotate is not None:
             ax.view_init(rotate[0],rotate[1])
@@ -98,10 +98,11 @@ class Ellipsoid(EmbeddedManifold):
             ax.plot_surface(x, y, z, color=cm.jet(0.), alpha=alpha)
 
     # plot x on ellipsoid. x can be either in coordinates or in R^3
-    def plotx(self, x, u=None, v=None, color='b', color_intensity=1., linewidth=1., s=15., prevx=None, last=True):
+    def plotx(self, x, u=None, v=None, N_vec=np.arange(0,n_steps.eval()), i0=0, color='b', color_intensity=1., linewidth=1., s=15., prevx=None, last=True):
         if len(x.shape)>1:
             for i in range(x.shape[0]):
                 self.plotx(x[i], u=u if i == 0 else None, v=v[i] if v is not None else None,
+                           N_vec=N_vec,i0=i,
                            color=color,
                            color_intensity=color_intensity if i==0 or i==x.shape[0]-1 else .7,
                            linewidth=linewidth,
@@ -132,12 +133,15 @@ class Ellipsoid(EmbeddedManifold):
                       color='black')
 
         if v is not None:
-            JFx = self.JFf(xcoords)
-            v = np.dot(JFx, v)
-            ax.quiver(x[0], x[1], x[2], v[0], v[1], v[2],
-                      pivot='tail',
-                      arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
-                      color='black')
+            #Seq = lambda m, n: [t*n//m + n//(2*m) for t in range(m)]
+            #Seqv = np.hstack([0,Seq(N_vec,n_steps.get_value())])
+            if i0 in N_vec:#Seqv:
+                JFx = self.JFf(xcoords)
+                v = np.dot(JFx, v)
+                ax.quiver(x[0], x[1], x[2], v[0], v[1], v[2],
+                          pivot='tail',
+                          arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
+                        color='black')
 
     # Plot of geodesic in R^2:
     def plotR2x(self,x,ui=None,color='b',color_intensity=1.,linewidth=3.,prevx=None,last=True):

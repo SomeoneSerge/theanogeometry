@@ -96,14 +96,34 @@ class SON(LieGroup):
 
     ### plotting
     import matplotlib.pyplot as plt
-    def plotg(self,g,color_intensity=1.,color=None,linewidth=3.,prevg=None):
+    def plotg(self,g,color_intensity=1.,color=None,linewidth=3.,alpha=1.,prevg=None):
         if len(g.shape)>2:
             for i in range(g.shape[0]):
                 self.plotg(g[i],
                       linewidth=linewidth if i==0 or i==g.shape[0]-1 else .3,
                       color_intensity=color_intensity if i==0 or i==g.shape[0]-1 else .7,
+                      alpha=alpha,
                       prevg=g[i-1] if i>0 else None)
-            return
+            return 
+
+        # Grid Settings:
+        import matplotlib.ticker as ticker 
+        ax = plt.gca(projection='3d')
+        x = np.arange(-10,10,1)
+        ax.w_xaxis.set_major_locator(ticker.FixedLocator(x))
+        ax.w_yaxis.set_major_locator(ticker.FixedLocator(x))
+        ax.w_zaxis.set_major_locator(ticker.FixedLocator(x))
+        ax.w_xaxis.set_pane_color((0.98, 0.98, 0.99, 1.0))
+        ax.w_yaxis.set_pane_color((0.98, 0.98, 0.99, 1.0))
+        ax.w_zaxis.set_pane_color((0.98, 0.98, 0.99, 1.0))
+        ax.xaxis._axinfo["grid"]['linewidth'] = 0.3
+        ax.yaxis._axinfo["grid"]['linewidth'] = 0.3
+        ax.zaxis._axinfo["grid"]['linewidth'] = 0.3
+        ax.set_xlim(-1.,1.)
+        ax.set_ylim(-1.,1.)
+        ax.set_zlim(-1.,1.)
+        ax.set_aspect("equal")
+   
         s0 = np.eye(3) # shape
         s = np.dot(g,s0) # rotated shape
         if prevg is not None:
@@ -111,11 +131,11 @@ class SON(LieGroup):
 
         colors = color_intensity*np.array([[1,0,0],[0,1,0],[0,0,1]])
         for i in range(s.shape[1]):
-            plt.quiver(0,0,0,s[0,i],s[1,i],s[2,i],pivot='tail',linewidth=linewidth,color=colors[i] if color is None else color,arrow_length_ratio=.15,length=1)
+            plt.quiver(0,0,0,s[0,i],s[1,i],s[2,i],pivot='tail',linewidth=linewidth,color=colors[i] if color is None else color,arrow_length_ratio=.15,length=1,alpha=alpha)
             if prevg is not None:
                 ss = np.stack((prevs,s))
                 ss = ss/np.linalg.norm(ss,axis=1)[:,np.newaxis,:]
-                plt.plot(ss[:,0,i],ss[:,1,i],ss[:,2,i],linewidth=.3,color=colors[i])
+                plt.plot(ss[:,0,i],ss[:,1,i],ss[:,2,i],linewidth=1,color=colors[i])
 
 ## skew symmetric test
 ## np.random.seed(42)

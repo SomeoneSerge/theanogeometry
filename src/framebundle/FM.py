@@ -32,7 +32,7 @@ def initialize(M):
     x = M.element()
     x1 = M.element()
     v = M.vector()
-    u = M.frame()
+    nu = M.frame()
     q = M.element()
     p = M.covector()
 
@@ -124,16 +124,16 @@ def initialize(M):
         return res.x
 
     ##### Horizontal vector fields:
-    def Hori(x,u):
+    def Hori(x,nu):
     
         # Contribution from the coordinate basis for x: 
-        dx = u
+        dx = nu
         # Contribution from the basis for Xa:
-        du = -T.tensordot(u, T.tensordot(u, M.Gamma_g(x), axes = [0,2]), axes = [0,2])
+        dnu = -T.tensordot(nu, T.tensordot(nu, M.Gamma_g(x), axes = [0,2]), axes = [0,2])
 
-        duv = du.reshape((u.shape[1],du.shape[1]*du.shape[2]))
+        dnuv = dnu.reshape((nu.shape[1],dnu.shape[1]*dnu.shape[2]))
 
-        return T.concatenate([dx,duv.T], axis = 0)
+        return T.concatenate([dx,dnuv.T], axis = 0)
     M.Hori = Hori
-    M.Horif = theano.function([x,u],M.Hori(x,u))
+    M.Horif = theano.function([x,nu],M.Hori(x,nu))
 

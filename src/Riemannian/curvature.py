@@ -25,7 +25,7 @@ def initialize(M):
 
     d = M.dim
     x = M.element()
-    u = M.frame()
+    nu = M.frame()
     e1 = M.vector()
     e2 = M.vector()
     
@@ -33,13 +33,13 @@ def initialize(M):
     def R(x):
         return T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(0,3,1,2) - T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(3,0,1,2) + T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) - T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
 
-    def R_u(x,u):
-        return T.tensordot(T.nlinalg.matrix_inverse(u),T.tensordot(R(x),u,(2,0)),(1,2)).dimshuffle(1,2,0,3)
+    def R_u(x,nu):
+        return T.tensordot(T.nlinalg.matrix_inverse(nu),T.tensordot(R(x),nu,(2,0)),(1,2)).dimshuffle(1,2,0,3)
 
     M.R = R
     M.Rf = theano.function([x], R(x))
     M.R_u = R_u
-    M.R_uf = theano.function([x,u], R_u(x,u))
+    M.R_uf = theano.function([x,nu], R_u(x,nu))
 
     # Sectional Curvature:
     def sec_curv(x,e1,e2):

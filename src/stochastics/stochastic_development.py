@@ -23,49 +23,39 @@ from src.utils import *
 
 def initialize(M):
 
-    #from src.framebundle import FM
-    #FM.initialize(M)
-    
     d = M.dim
-    m = M.rank
-    #n = M.N
 
     dgamma = M.process() # deterministic curve
     dW = M.process() # stochastic process
     drift = M.vector()
-    q = M.element()
+    u = M.element()
 
     ## Development: (Deterministic)
-    def ode_Dev(dgamma,t,q):
+    def ode_Dev(dgamma,t,u):
     
-        dgamma1 = dgamma #T.tile(T.repeat(dgamma.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
-
-        x = q[0:d]
-        ui = q[d:(d+d*d)].reshape((d,d)) #q[d:(d+n*d)].reshape((d,d))
+        x = u[0:d]
+        ui = u[d:(d+d*d)].reshape((d,d)) 
         m = dgamma.shape[0]
 
-        det = T.tensordot(M.Hori(x,ui)[:,0:m], dgamma1, axes = [1,0])
+        det = T.tensordot(M.Hori(x,ui)[:,0:m], dgamma, axes = [1,0])
     
         return det
 
-    M.dev = lambda q,dgamma: integrate(ode_Dev,q,dgamma)[1]
-    M.devf = theano.function([q,dgamma], M.dev(q,dgamma))
+    M.dev = lambda u,dgamma: integrate(ode_Dev,u,dgamma)[1]
+    M.devf = theano.function([u,dgamma], M.dev(u,dgamma))
 
     # Stochastic Development:
-    def sde_SD(dWt,t,q,drift):
+    def sde_SD(dWt,t,u,drift):
         
-        dWt1 = dWt#T.tile(T.repeat(dWt.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
-        drift1 = drift #T.tile(T.repeat(drift.reshape((M.m,M.rank//M.m)),M.m,axis=1),(M.m*6)//M.rank)
-        
-        x = q[0:d]
-        ui = q[d:(d+d*d)].reshape((d,d)) #q[d:(d+n*d)].reshape((d,n))
-        m = dWt1.shape[0]
+        x = u[0:d]
+        ui = u[d:(d+d*d)].reshape((d,d))
+        m = dWt.shape[0]
 
-        det = T.tensordot(M.Hori(x,ui)[:,0:m], drift1, axes = [1,0]) #T.diagonal(T.tensordot(M.Hori(x,ui), drift1, axes = [1,0]))
-        sto = T.tensordot(M.Hori(x,ui)[:,0:m], dWt1, axes = [1,0]) #T.diagonal(T.tensordot(M.Hori(x,ui), dWt1, axes = [1,0]))
+        det = T.tensordot(M.Hori(x,ui)[:,0:m], drift, axes = [1,0])
+        sto = T.tensordot(M.Hori(x,ui)[:,0:m], dWt, axes = [1,0])
     
         return (det, sto, T.constant(0.), T.constant(0.))
 
-    M.stoc_dev = lambda q,dWt,drift: integrate_sde(sde_SD,integrator_stratonovich,q,dWt,drift)[1]
-    M.stoc_devf = theano.function([q,dWt,drift], M.stoc_dev(q,dWt,drift))
+    M.stoc_dev = lambda u,dWt,drift: integrate_sde(sde_SD,integrator_stratonovich,u,dWt,drift)[1]
+    M.stoc_devf = theano.function([u,dWt,drift], M.stoc_dev(u,dWt,drift))
 
