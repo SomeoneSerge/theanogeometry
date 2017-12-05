@@ -29,27 +29,77 @@ def initialize(M):
     e1 = M.vector()
     e2 = M.vector()
     
-    # Riemannian Curvature tensor: (coordinates are m,i,j,k where m is the upper index)
+    """
+    Riemannian Curvature tensor
+
+    Args:
+        x: point on manifold
+
+    Returns:
+        4-tensor R_ijk^m in with order i,j,k,m
+    """
     def R(x):
-        return T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(0,3,1,2) - T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(3,0,1,2) + T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) - T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
-
-    def R_u(x,nu):
-        return T.tensordot(T.nlinalg.matrix_inverse(nu),T.tensordot(R(x),nu,(2,0)),(1,2)).dimshuffle(1,2,0,3)
-
+        return (
+                T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(3,0,1,2) 
+                - T.tensordot(M.Gamma_g(x),M.Gamma_g(x),axes = [0,2]).dimshuffle(0,3,1,2) 
+                +  T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(3,1,2,0)
+                -  T.jacobian(M.Gamma_g(x).flatten(),x).reshape((d,d,d,d)).dimshuffle(1,3,2,0) 
+                )
     M.R = R
     M.Rf = theano.function([x], R(x))
+
+    def R_u(x,u):
+        return T.tensordot(T.nlinalg.matrix_inverse(u),T.tensordot(R(x),u,(2,0)),(1,2)).dimshuffle(1,2,0,3)
     M.R_u = R_u
     M.R_uf = theano.function([x,nu], R_u(x,nu))
 
-    # Sectional Curvature:
-    def sec_curv(x,e1,e2):
-        Rm = T.tensordot(M.g(x),M.R(x), [1,0])
-        sec = T.tensordot(T.tensordot(T.tensordot(T.tensordot(Rm, e1, [0,0]), 
-                                                  e2, [0,0]),
-                          e2, [0,0]), e1, [0,0])
-        return sec
+    """
+    Sectional curvature
 
+    Args:
+        x: point on manifold
+        e1,e2: two orthonormal vectors spanning the section
+
+    Returns:
+        sectional curvature K(e1,e2)
+    """
+    def sec_curv(x,e1,e2):
+        Rflat = T.tensordot(M.R(x),M.g(x),[3,0])
+        sec = T.tensordot(
+                T.tensordot(
+                    T.tensordot(
+                        T.tensordot(
+                            Rflat, 
+                            e1, [0,0]), 
+                        e2, [0,0]),
+                    e2, [0,0]), 
+                e1, [0,0])
+        return sec
     M.sec_curv = sec_curv
     M.sec_curvf = theano.function([x,e1,e2],sec_curv(x,e1,e2))
 
+    """
+    Ricci curvature
 
+    Args:
+        x: point on manifold
+
+    Returns:
+        2-tensor R_ij in order i,j
+    """
+    Ricci_curv = lambda x: T.tensordot(M.R(x),T.eye(M.dim),((0,3),(0,1)))
+    M.Ricci_curv = Ricci_curv
+    M.Ricci_curvf = theano.function([x],Ricci_curv(x))
+
+    """
+    Scalar curvature
+
+    Args:
+        x: point on manifold
+
+    Returns:
+        scalar curvature
+    """
+    S_curv = lambda x: T.tensordot(M.Ricci_curv(x),M.gsharp(x),((0,1),(0,1)))
+    M.S_curv = S_curv
+    M.S_curvf = theano.function([x],S_curv(x))
