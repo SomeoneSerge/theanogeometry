@@ -122,6 +122,7 @@ def initialize(M):
                        method='CG', jac=False, options={'disp': False, 
                                                         'maxiter': 50})
         return res.x
+    M.Logfm = Logfm
 
     ##### Horizontal vector fields:
     def Hori(x,nu):
