@@ -57,10 +57,10 @@ def initialize(M):
         x: point on manifold
 
     Returns:
-        4-tensor (R_u)_ijk^m in with order i,j,k,m
+        4-tensor (R_u)_ij^m_k with order i,j,m,k
     """
     def R_u(x,u):
-        return T.tensordot(T.nlinalg.matrix_inverse(u),T.tensordot(R(x),u,(2,0)),(1,2)).dimshuffle(1,2,3,0)
+        return T.tensordot(T.nlinalg.matrix_inverse(u),T.tensordot(R(x),u,(2,0)),(1,2)).dimshuffle(1,2,0,3)
     M.R_u = R_u
     M.R_uf = theano.function([x,nu], R_u(x,nu))
 
