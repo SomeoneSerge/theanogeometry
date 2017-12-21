@@ -1,3 +1,5 @@
+![Logo](https://bitbucket.org/stefansommer/theanogeometry/logo/stocso3.pdf)
+
 # Theano Geometry #
 
 ### Who do I talk to? ###
