@@ -1,4 +1,4 @@
-![Logo](https://bitbucket.org/stefansommer/theanogeometry/logo/stocso3.pdf)
+[embed]https://bitbucket.org/stefansommer/theanogeometry/logo/stocso3.pdf[/embed]
 
 # Theano Geometry #
 
