@@ -1,4 +1,4 @@
-![Scheme](logo/stocso3.jpg)
+![Scheme](logo/stocso31.jpg)
 
 # Theano Geometry #
 
