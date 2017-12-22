@@ -1,6 +1,6 @@
-<p align="center">
+<div markdown style="float:center">
 ![](logo/stocso31s.jpg)
-</p>
+</div>
 
 # Theano Geometry #
 
