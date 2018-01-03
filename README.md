@@ -1,6 +1,4 @@
-<p align="center">
 ![](logo/stocso31s.jpg)
-</p>
 
 # Theano Geometry #
 

@@ -26,13 +26,14 @@ from src.utils import *
 
 def initialize(M):
     """ Numerical Brownian motion based on Stochastic development """
+    d = M.dim
 
-    def SD_brownian(q,dim=2,dWt=None):
+    def SD_brownian(q,c=1,dim=d.eval(),dWt=None):
     
         if dWt is None:
-            dWt = np.random.normal(0, np.sqrt(dt.eval()), (n_steps.get_value(),dim))
+            dWt = c*np.random.normal(0, np.sqrt(dt.eval()), (n_steps.get_value(),dim))
 
-        xs = M.stoc_devf(q,dWt,np.zeros(d.eval()))
+        xs = M.stoc_devf(q,dWt,np.zeros(dim))
     
         return xs
-
+    M.SD_brownian = SD_brownian
