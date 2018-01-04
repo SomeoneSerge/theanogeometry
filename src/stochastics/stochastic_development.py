@@ -19,43 +19,37 @@
 
 from src.setup import *
 from src.utils import *
-#from src.manifold import *
 
 def initialize(M):
-
+    dgamma = T.matrix() # velocity of Euclidean curve
+    dsm = T.matrix() # derivative of Euclidean semimartingale
+    u = M.FM_element()
     d = M.dim
 
-    dgamma = M.process() # deterministic curve
-    dW = M.process() # stochastic process
-    drift = M.vector()
-    u = M.element()
-
-    ## Development: (Deterministic)
-    def ode_Dev(dgamma,t,u):
+    # Deterministic development
+    def ode_development(dgamma,t,u):
     
         x = u[0:d]
-        ui = u[d:(d+d*d)].reshape((d,d)) 
-        m = dgamma.shape[0]
+        nu = u[d:].reshape((d,-1))
+        m = nu.shape[1]
 
-        det = T.tensordot(M.Hori(x,ui)[:,0:m], dgamma, axes = [1,0])
+        det = T.tensordot(M.Hori(x,nu)[:,0:m], dgamma, axes = [1,0])
     
         return det
 
-    M.dev = lambda u,dgamma: integrate(ode_Dev,u,dgamma)[1]
-    M.devf = theano.function([u,dgamma], M.dev(u,dgamma))
+    M.development = lambda u,dgamma: integrate(ode_development,u,dgamma)[1]
+    M.developmentf = theano.function([u,dgamma], M.development(u,dgamma))
 
-    # Stochastic Development:
-    def sde_SD(dWt,t,u,drift):
-        
+    # Stochastic development
+    def sde_development(dsm,t,u):
         x = u[0:d]
-        ui = u[d:(d+d*d)].reshape((d,d))
-        m = dWt.shape[0]
+        nu = u[d:].reshape((d,-1))
+        m = nu.shape[1]
 
-        det = T.tensordot(M.Hori(x,ui)[:,0:m], drift, axes = [1,0])
-        sto = T.tensordot(M.Hori(x,ui)[:,0:m], dWt, axes = [1,0])
+        sto = T.tensordot(M.Hori(x,nu)[:,0:m], dsm, axes = [1,0])
     
-        return (det, sto, T.constant(0.), T.constant(0.))
+        return (T.zeros_like(sto), sto, M.Hori(x,nu)[:,0:m])
 
-    M.stoc_dev = lambda u,dWt,drift: integrate_sde(sde_SD,integrator_stratonovich,u,dWt,drift)[1]
-    M.stoc_devf = theano.function([u,dWt,drift], M.stoc_dev(u,dWt,drift))
+    M.stochastic_development = lambda u,dsm: integrate_sde(sde_development,integrator_stratonovich,u,dsm)
+    M.stochastic_developmentf = theano.function([u,dsm], M.stochastic_development(u,dsm))
 

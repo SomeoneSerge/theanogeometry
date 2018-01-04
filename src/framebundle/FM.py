@@ -24,7 +24,7 @@ from src.params import *
 from src.utils import *
 
 def initialize(M):
-    """ Frame bundle geometry """ 
+    """ Frame Bundle geometry """
     
     d  = M.dim
     r = M.rank # dimension used for development
@@ -35,6 +35,11 @@ def initialize(M):
     nu = M.frame()
     q = M.element()
     p = M.covector()
+
+    def FM_element():
+        """ return element of FM as concatenation (x,nu) flattened """
+        return T.vector()
+    M.FM_element = FM_element
 
     ##### Cometric matrix:
     def gFMsharp(u):

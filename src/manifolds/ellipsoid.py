@@ -39,10 +39,10 @@ class Ellipsoid(EmbeddedManifold):
 
         ## map F stereographic R2_r\rightarrow R3_s
         x = self.coords()
-        F = lambda q: params*T.stack([2*q[0],2*q[1],-(-1+q[0]**2+q[1]**2)])/(1+q[0]**2+q[1]**2)
+        F = lambda x: params*T.stack([2*x[0],2*x[1],-(-1+x[0]**2+x[1]**2)])/(1+x[0]**2+x[1]**2)
         self.Ff = theano.function([x], F(x))
 
-        JF = lambda q: T.jacobian(F(q),q)
+        JF = lambda x: T.jacobian(F(x),x)
         self.JFf = theano.function([x], JF(x))
 
         # metric matrix

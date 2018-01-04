@@ -17,23 +17,26 @@
 # along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
 #
 
-#from src.group import *
 from src.setup import *
 from src.utils import *
-#from src.manifold import *
-#from src.metric import *
-#from src.stochastic import Stochastic_Development import *
 
 def initialize(M):
-    """ Numerical Brownian motion based on Stochastic development """
-    d = M.dim
+    """ Brownian motion from stochastic development """
 
-    def SD_brownian(q,c=1,dim=d.eval(),dWt=None):
+    x = M.element()
+    dsm = T.matrix() # derivative of Euclidean semimartingale
+    u = M.FM_element()
+    d = M.dim    
     
-        if dWt is None:
-            dWt = c*np.random.normal(0, np.sqrt(dt.eval()), (n_steps.get_value(),dim))
-
-        xs = M.stoc_devf(q,dWt,np.zeros(dim))
+    def Brownian_development(x,dWt):
+        # amend x with orthogonal basis to get initial frame bundle element
+        gsharpx = M.gsharp(x)
+        nu = theano.tensor.slinalg.Cholesky()(gsharpx)
+        u = T.concatenate((x,nu.flatten()))
+        
+        (ts,us) = M.stochastic_development(u,dWt)
+        
+        return (ts,us[:,0:M.dim])
     
-        return xs
-    M.SD_brownian = SD_brownian
+    M.Brownian_development = Brownian_development
+    M.Brownian_developmentf = theano.function([x,dWt], M.Brownian_development(x,dWt)) 
