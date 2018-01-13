@@ -39,23 +39,23 @@ vagrant ssh -- -L 8888:localhost:8888
 Open the url http://localhost:8888/ in your web browser. The notebook password is '12345'
 
 #### Windows - conda: (recommended)
-1. Install miniconda for Python 3.6 (or higher) from https://conda.io/miniconda.html
-1. Open the now installed 'Anaconda Prompt' program
-1. Create a new conda environment and activate it by issuing the following commands in the Anaconda prompt:
+Install miniconda for Python 3.6 (or higher) from https://conda.io/miniconda.html
+Open the now installed 'Anaconda Prompt' program
+Create a new conda environment and activate it by issuing the following commands in the Anaconda prompt:
 ```
 conda create -n theanogeometry python=3
 activate theanogeometry
 ```
-1. Use Conda to install the necessary packages:
+Use Conda to install the necessary packages:
 ```
 conda install git numpy scipy theano m2w64-toolchain mkl-service libpython jupyter matplotlib multiprocess scikit-learn
 ```
-1. Use git to download Theano Geometry and cd to the directory:
+Use git to download Theano Geometry and cd to the directory:
 ```
 git clone https://bitbucket.org/stefansommer/theanogeometry.git
 cd theanogeometry
 ```
-1. Start Jupyter:
+Start Jupyter:
 ```
 set THEANORC=.theanorc 
 jupyter notebook
