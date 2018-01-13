@@ -1,0 +1,6 @@
+# default theanorc for Theano Geometry
+[global]
+floatX = float64
+device = cpu
+optimizer = fast_run
+cast_policy = numpy+floatX
