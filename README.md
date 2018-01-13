@@ -48,8 +48,7 @@ activate theanogeometry
 ```
 1. Use Conda to install the necessary packages:
 ```
-conda install git numpy scipy theano m2w64-toolchain mkl-service libpython
-jupyter matplotlib multiprocess scikit-learn
+conda install git numpy scipy theano m2w64-toolchain mkl-service libpython jupyter matplotlib multiprocess scikit-learn
 ```
 1. Use git to download Theano Geometry and cd to the directory:
 ```
