@@ -40,7 +40,7 @@ Open the url http://localhost:8888/ in your web browser. The notebook password i
 
 #### Windows - conda: (recommended)
 Install miniconda for Python 3.6 (or higher) from https://conda.io/miniconda.html  
-Open the now installed 'Anaconda Prompt' program  
+Open the now installed 'Anaconda Prompt' program.  
 Create a new conda environment and activate it by issuing the following commands in the Anaconda prompt:
 ```
 conda create -n theanogeometry python=3
