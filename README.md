@@ -2,6 +2,8 @@
 
 # Theano Geometry #
 
+The code in this repository is based on the papers *Differential geometry and stochastic dynamics with deep learning numerics* [arXiv:1712.08364](https://arxiv.org/abs/1712.08364) and *Computational Anatomy in Theano* [arXiv:1706.07690](https://arxiv.org/abs/1706.07690).
+
 ### Who do I talk to? ###
 
 Please contact Stefan Sommer *sommer@di.ku.dk*
