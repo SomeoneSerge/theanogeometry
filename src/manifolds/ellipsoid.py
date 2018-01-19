@@ -168,7 +168,7 @@ class Ellipsoid(EmbeddedManifold):
 
     ##### Geodesics (FM):
     ## Plot of geodesic Sphere
-    def plotFMx(self,q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,s=15.,prevx=None,last=True):
+    def plotFMx(self,q,N_vec=0,i0=0,color='b',color_intensity=1.,linewidth=3.,s=15.,prevx=None,last=True):
             if len(q.shape)>1:
                 for i in range(q.shape[0]):
                     self.plotFMx(q[i],
@@ -203,14 +203,14 @@ class Ellipsoid(EmbeddedManifold):
                 Seqv = Seq(N_vec,n_steps.get_value())
                 if i0 in Seqv:
                     for j in range(self.dim.eval()):
-                            JFgammai = self.JFf(xq)
-                            uiq = np.dot(JFgammai,ui[j,:])
-                            ax.quiver(x[0],x[1],x[2],uiq[0],uiq[1],uiq[2], pivot='tail',
-                                  arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
+                        JFgammai = self.JFf(xq)
+                        uiq = np.dot(JFgammai,ui[j,:])
+                        ax.quiver(x[0],x[1],x[2],uiq[0],uiq[1],uiq[2], pivot='tail',
+                                arrow_length_ratio = 0.15, linewidths=linewidth, length=0.5,
                                 color='black')
 
     ## Plot of geodesic in R^2:
-    def plotR2FMx(self,q,N_vec=None,i0=0,color='b',color_intensity=1.,linewidth=3.,prevx=None,last=True):
+    def plotR2FMx(self,q,N_vec=0,i0=0,color='b',color_intensity=1.,linewidth=3.,prevx=None,last=True):
         if len(q.shape)>1:
             for i in range(q.shape[0]):
                 self.plotR2FMx(q[i],

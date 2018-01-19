@@ -20,14 +20,15 @@
 from src.setup import *
 from src.utils import *
 
-def initialize(M):
+def initialize(M,f=None):
     """ numerical Riemannian Logarithm map """
 
     x = M.element()
     y = M.element()
     v = M.vector()
 
-    f = M.Exp_Hamiltonian
+    if f is None:
+        f = M.Exp
     loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(f(x,v)-y))
     dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
     lossf = theano.function([x,v,y], loss(x,v,y))

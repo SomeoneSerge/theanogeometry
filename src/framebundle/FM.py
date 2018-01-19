@@ -27,30 +27,37 @@ def initialize(M):
     """ Frame Bundle geometry """
     
     d  = M.dim
-    r = M.rank # dimension used for development
 
     x = M.element()
     x1 = M.element()
     v = M.vector()
     nu = M.frame()
-    q = M.element()
-    p = M.covector()
 
     def FM_element():
         """ return element of FM as concatenation (x,nu) flattened """
         return T.vector()
+    def FM_vector():
+        """ vector in TFM """
+        return T.vector()
+    def FM_covector():
+        """ covector in T^*FM """
+        return T.vector()
     M.FM_element = FM_element
+    M.FM_vector = FM_vector
+    M.FM_covector = FM_covector
+
+    u = M.FM_element()
+    q = M.FM_element()
+    p = M.FM_covector()
 
     ##### Cometric matrix:
-    def gFMsharp(u):
-    
+    def g_FMsharp(u):
         x = u[0:d]
-        ui = u[d:].reshape((d,d))#.reshape((d,M.m))
-        GamX = T.tensordot(M.Gamma_g(x), ui, 
-                           axes = [2,0]).dimshuffle(0,2,1)
+        nu = u[d:].reshape((d,d))#.reshape((d,M.m))
+        GamX = T.tensordot(M.Gamma_g(x), nu, axes = [2,0]).dimshuffle(0,2,1)
     
-        delta = T.eye(ui.shape[0],ui.shape[1])
-        W = T.tensordot(ui, ui, axes = [1,1]) + lambdag0*M.g(x)
+        delta = T.eye(nu.shape[0],nu.shape[1])
+        W = T.tensordot(nu,  nu,  axes = [1,1]) + lambdag0*M.g(x)
     
         gij = W
         gijb = -T.tensordot(W, GamX, axes = [1,2])
@@ -63,15 +70,13 @@ def initialize(M):
     ##### Hamiltonian on FM based on the pseudo metric tensor: 
     lambdag0 = 0
 
-    xi = T.vector()
-    xia = T.matrix()
-    def Hsplit(x,ui,xi,xia):
+    def H_FM(x,nu,px,pnu):
         
-        GamX = T.tensordot(M.Gamma_g(x), ui, 
+        GamX = T.tensordot(M.Gamma_g(x), nu, 
                            axes = [2,0]).dimshuffle(0,2,1)
     
-        delta = T.eye(ui.shape[0],ui.shape[1])
-        W = T.tensordot(ui, ui, axes = [1,1]) + lambdag0*M.g(x)
+        delta = T.eye(nu.shape[0],nu.shape[1])
+        W = T.tensordot(nu, nu, axes = [1,1]) + lambdag0*M.g(x)
     
         gij = W
         gijb = -T.tensordot(W, GamX, axes = [1,2])
@@ -79,58 +84,56 @@ def initialize(M):
         giajb = T.tensordot(T.tensordot(GamX, W, axes = [2,0]), 
                             GamX, axes = [2,2])
     
-        xigxi = T.dot(T.tensordot(xi, gij, axes = [0,0]), xi)
-        xigxia = T.tensordot(T.tensordot(xi, gijb, axes = [0,0]), 
-                             xia, axes = [[0,1],[0,1]])
-        xiagxi = T.tensordot(T.tensordot(xi, giaj, axes = [0,2]), 
-                             xia, axes = [[0,1],[0,1]])
-        xiagxia = T.tensordot(T.tensordot(giajb, xia, axes = [[2,3],[0,1]]), 
-                              xia, axes = [[0,1],[0,1]])
+        pxgpx = T.dot(T.tensordot(px, gij, axes = [0,0]), px)
+        pxgpnu = T.tensordot(T.tensordot(px, gijb, axes = [0,0]), 
+                             pnu, axes = [[0,1],[0,1]])
+        pnugpx = T.tensordot(T.tensordot(px, giaj, axes = [0,2]), 
+                             pnu, axes = [[0,1],[0,1]])
+        pnugpnu = T.tensordot(T.tensordot(giajb, pnu, axes = [[2,3],[0,1]]), 
+                              pnu, axes = [[0,1],[0,1]])
     
-        return 0.5*(xigxi + xigxia + xiagxi + xiagxia)
+        return 0.5*(pxgpx + pxgpnu + pnugpx + pnugpnu)
 
-    M.Hfm = lambda q,p: Hsplit(q[0:d],q[d:(d+d*d)].reshape((d,d)),\
-                               p[0:d],p[d:(d+d*d)].reshape((d,d)))
-# Hsplit(q[0:d],q[d:(d+M.m*d)].reshape((d,M.m)),\
-                       #        p[0:d],p[d:(d+M.m*d)].reshape((d,M.m)))
-    M.Hfmf = theano.function([q,p],M.Hfm(q,p))
+    M.H_FM = lambda q,p: H_FM(q[0:d],q[d:].reshape((d,-1)),\
+                               p[0:d],p[d:].reshape((d,-1)))
+    M.H_FMf = theano.function([q,p],M.H_FM(q,p))
 
     ##### Evolution equations:
-    dq = lambda q,p: T.grad(M.Hfm(q,p),p)
-    dp = lambda q,p: -T.grad(M.Hfm(q,p),q)
-    #dqfmf = theano.function([q,p], dq(q,p))
-    #dpfmf = theano.function([q,p], dp(q,p))
+    dq = lambda q,p: T.grad(M.H_FM(q,p),p)
+    dp = lambda q,p: -T.grad(M.H_FM(q,p),q)
 
-    def ode_Hamfm(t,x): # Evolution equations at (p,q).
+    def ode_Hamiltonian_FM(t,x): # Evolution equations at (p,q).
         dqt = dq(x[0],x[1])
         dpt = dp(x[0],x[1])
         return T.stack((dqt,dpt))
-    M.Hamfm = lambda q,p: integrate(ode_Hamfm,T.stack((q,p)))
-    M.Hamfmf = theano.function([q,p], M.Hamfm(q,p))
+    M.Hamiltonian_dynamics_FM = lambda q,p: integrate(ode_Hamiltonian_FM,T.stack((q,p)))
+    M.Hamiltonian_dynamics_FMf = theano.function([q,p], M.Hamiltonian_dynamics_FM(q,p))
 
     ## Geodesic
-    M.Expfm = lambda q,p: M.Hamfm(q,p)[1][-1,0]
-    M.Exptfm = lambda q,p: M.Hamfm(q,p)[1][:,0].dimshuffle((1,0))
-    M.Expfmf = theano.function([q,p], M.Expfm(q,p))
-    M.Exptfmf = theano.function([q,p], M.Exptfm(q,p))
+    M.Exp_Hamiltonian_FM = lambda q,p: M.Hamiltonian_dynamics_FM(q,p)[1][-1,0]
+    M.Exp_Hamiltonian_FMt = lambda q,p: M.Hamiltonian_dynamics_FM(q,p)[1][:,0].dimshuffle((1,0))
+    M.Exp_Hamiltonian_FMf = theano.function([q,p], M.Exp_Hamiltonian_FM(q,p))
+    M.Exp_Hamiltonian_FMtf = theano.function([q,p], M.Exp_Hamiltonian_FMt(q,p))
 
-    # Most Probable Path
-    M.loss = lambda x,x1,v: 1./d*T.sum((M.Expfm(x,M.flat(x,v))[0:d] - x1[0:d])**2)
-    M.lossf = theano.function([x,x1,v], M.loss(x,x1,v))
+    # Most probable path for the driving semi-martingale
+    M.loss = lambda u,x,p: 1./d*T.sum((M.Exp_Hamiltonian_FM(u,p)[0:d] - x[0:d])**2)
+    M.lossf = theano.function([u,x,p], M.loss(u,x,p))
 
-    def Logfm(x,x1):
-        def fopts(v):
-            y = M.lossf(x,x1,v)
+    def Log_FM(u,x):
+        def fopts(p):
+            y = M.lossf(u,x,p)
             return y
 
-        res = minimize(fopts, np.zeros([d.eval()+M.m.eval()*d.eval()]), 
+        res = minimize(fopts, np.zeros(u.shape), 
                        method='CG', jac=False, options={'disp': False, 
                                                         'maxiter': 50})
         return res.x
-    M.Logfm = Logfm
+    M.Log_FM = Log_FM
 
     ##### Horizontal vector fields:
-    def Hori(x,nu):
+    def Horizontal(u):
+        x = u[0:d]
+        nu = u[d:].reshape((d,-1))
     
         # Contribution from the coordinate basis for x: 
         dx = nu
@@ -140,6 +143,6 @@ def initialize(M):
         dnuv = dnu.reshape((nu.shape[1],dnu.shape[1]*dnu.shape[2]))
 
         return T.concatenate([dx,dnuv.T], axis = 0)
-    M.Hori = Hori
-    M.Horif = theano.function([x,nu],M.Hori(x,nu))
+    M.Horizontal = Horizontal
+    M.Horizontalf = theano.function([u],M.Horizontal(u))
 

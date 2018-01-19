@@ -29,7 +29,7 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
     assert (integration is 'ito' or integration is 'stratonovich')
     assert (method is 'DelyonHu')  # more general schemes not implemented
 
-    def sde_guided(dW, t, x, log_likelihood, log_varphi, v, *ys):
+    def sde_guided(dW, t, x, log_likelihood, log_varphi, h, v, *ys):
         (det, sto, X, *dys_sde) = sde_f(dW, t, x, *ys)
         h = theano.ifelse.ifelse(T.lt(t, Tend - dt / 2),
                                  phi(x, v) / (Tend - t),
@@ -75,7 +75,7 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
                                    0.)
         log_varphi = t2 + t34
 
-        return (det + T.tensordot(X, h, 1), sto, X, log_likelihood, log_varphi, T.zeros_like(v), *dys_sde)
+        return (det + T.tensordot(X, h, 1), sto, X, log_likelihood, log_varphi, dW_guided/dt, T.zeros_like(v), *dys_sde)
 
     return sde_guided
 
@@ -83,22 +83,22 @@ def get_guided_likelihood(M, sde_f, phi, sqrtCov, q, thetas, A=None, method='Del
     sde_guided = get_sde_guided(sde_f, phi, sqrtCov, A, method, integration)
     guided = lambda q, v, dWt: integrate_sde(sde_guided,
                                              integrator_ito if method is 'ito' else integrator_stratonovich,
-                                             q, dWt, T.constant(0.), T.constant(0.), v)
+                                             q, dWt, T.constant(0.), T.constant(0.), T.zeros_like(dWt[0]), v)
     v = M.element()
-    guidedf = theano.function([q, v, dWt], guided(q, v, dWt)[:4])
+    guidedf = theano.function([q, v, dWt], guided(q, v, dWt))
 
     # derivatives
     def dlog_likelihood(q, v, dWt):
-        s = guided(q, v, dWt)
+        s = guided(q, v, dWt)[:4]
         dlog_likelihoods = tuple(T.grad(s[2][-1], theta) for theta in thetas)
 
-        return (s[0], s[1], s[2], s[3]) + dlog_likelihoods
+        return tuple(s) + dlog_likelihoods
 
     dlog_likelihoodf = theano.function([q, v, dWt], dlog_likelihood(q, v, dWt))
 
     return (dlog_likelihood, dlog_likelihoodf, guided, guidedf)
 
-def bridge_sampling(lg,dlog_likelihoodf,dWsf,options,pars):
+def bridge_sampling(lg,bridge_sdef,dWsf,options,pars):
     """ sample samples_per_obs bridges """
     (v,seed) = pars
     if seed:
@@ -107,7 +107,7 @@ def bridge_sampling(lg,dlog_likelihoodf,dWsf,options,pars):
     log_varphis = np.zeros((options['samples_per_obs'],))
     log_likelihoods = np.zeros((options['samples_per_obs'],))
     for i in range(options['samples_per_obs']):
-        (ts,gs,log_likelihood,log_varphi,*dlog_likelihood) = dlog_likelihoodf(lg,v,dWsf())
+        (ts,gs,log_likelihood,log_varphi) = bridge_sdef(lg,v,dWsf())[:4]
         bridges[i] = gs
         log_varphis[i] = log_varphi[-1]
         log_likelihoods[i] = log_likelihood[-1]
@@ -138,7 +138,7 @@ def p_T_log_p_T(g, v, dWs, bridge_sde, phi, options, sigma=None, sde=None):
         # bridges
         Cgv = T.sum(phi(g, v) ** 2)
         def bridge_logvarphis(dWs, log_varphi):
-            (ts, gs, log_likelihood, log_varphi, _) = bridge_sde(g, v, dWs)
+            (ts, gs, log_likelihood, log_varphi) = bridge_sde(g, v, dWs)[:4]
             return log_varphi[-1]
 
         (cout, updates) = theano.scan(fn=bridge_logvarphis,

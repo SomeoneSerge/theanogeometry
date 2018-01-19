@@ -143,3 +143,38 @@ def plot_sphere_density_estimate(M, obss_M, alpha=.2, bandwidth=0.08, pts=100, c
         m.set_array(colors)
         plt.colorbar(m, shrink=0.7)
 
+
+def plot_Euclidean_density_estimate(obss, alpha=.2, view='2D', limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet):
+        if view is '2D':
+            hist,histy,histx= np.histogram2d(obss[:,0],obss[:,1],bins=25)
+            extent = [histy[0],histy[-1],histx[0],histx[-1]]
+            print(extent)
+
+            #plt.contour(hist/np.max(hist),extent=extent,levels=[0.05,0.2,0.4,0.6],zorder=10)
+            plt.imshow(hist.T/np.max(hist),extent=extent,interpolation='bicubic',         
+                       origin='lower',cmap='Greys')#,levels=[0.05,0.2,0.4,0.6],zorder=10)
+            #plt.colorbar()
+        else:
+            kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
+            kde.fit(obss)
+
+            # grids
+            obss_max = np.max(obss,axis=0)
+            obss_min = np.min(obss,axis=0)
+            minx = limits[0] if limits is not None else obss_min[0]-border
+            maxx = limits[1] if limits is not None else obss_max[0]+border
+            miny = limits[2] if limits is not None else obss_min[1]-border
+            maxy = limits[3] if limits is not None else obss_max[1]+border
+            X, Y = np.meshgrid(np.linspace(minx,maxx,pts),np.linspace(miny,maxy,pts))
+            xy = np.vstack([X.ravel(), Y.ravel()]).T        
+
+            # plot
+            ax = plt.gca()
+            fs = np.exp(kde.score_samples(xy))
+            norm = mpl.colors.Normalize(vmin=0,vmax=np.max(fs))
+            colors = cmap(norm(fs)).reshape(X.shape+(4,))
+            surf = ax.plot_surface(X, Y, fs.reshape(X.shape), rstride=1, cstride=1, cmap=cmap, facecolors = colors,  linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
+            m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)
+            m.set_array(colors)
+            plt.colorbar(m, shrink=0.7)
+            ax.set_xlim3d(minx,maxx), ax.set_ylim3d(miny,maxy), ax.set_zlim3d(0,np.max(fs))

@@ -22,3 +22,7 @@ vagrant/*.log
 # misc
 kent_distribution
 contributed
+
+# output figures
+*.pdf
+*.png

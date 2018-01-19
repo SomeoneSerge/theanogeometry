@@ -30,8 +30,9 @@ import matplotlib.ticker as ticker
 class S2(Ellipsoid):
     """ 2d Sphere """
 
-    def __init__(self):
+    def __init__(self,use_spherical_coords=False):
         Ellipsoid.__init__(self,params=[1.,1.,1.])
+        self.use_spherical_coords = use_spherical_coords
 
         # spherical coordinates
         x = self.coords() # Point on M in coordinates
@@ -45,6 +46,17 @@ class S2(Ellipsoid):
         self.mu_Q_spherical = lambda x: 1./T.nlinalg.Det()(self.g_spherical(x))
         self.mu_Q_sphericalf = theano.function([x],self.mu_Q_spherical(x))
 
+        # optionally use spherical coordinates in chart computations
+        if use_spherical_coords:
+            self.F = self.F_spherical
+            self.Ff = self.F_sphericalf
+
+            self.JF = self.JF_spherical
+            self.JFf = self.JF_sphericalf
+
+            # metric matrix
+            self.g = lambda x: T.dot(self.JF(x).T,self.JF(x))
+
     def __str__(self):
-        return "%dd sphere (ellipsoid parameters %s)" % (self.dim.eval(),self.params.eval())
+        return "%dd sphere (ellipsoid parameters %s, spherical_coords: %s)" % (self.dim.eval(),self.params.eval(),self.use_spherical_coords)
 

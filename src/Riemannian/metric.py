@@ -20,8 +20,14 @@
 from src.setup import *
 from src.utils import *
 
-def initialize(M):
+def initialize(M,truncate_high_order_derivatives=False):
     """ add metric related structures to manifold """
+
+    def truncate_derivatives(e):
+        if truncate_high_order_derivatives:
+            return theano.gradient.disconnected_grad(e)
+        else:
+            return e
 
     d = M.dim
     x = M.element()
@@ -38,7 +44,7 @@ def initialize(M):
     M.gsharpf = theano.function([x],M.gsharp(x))
 
 
-    M.Dg = lambda x: T.jacobian(M.g(x).flatten(),x).reshape((d,d,d)) # Derivative of metric
+    M.Dg = lambda x: truncate_derivatives(T.jacobian(M.g(x).flatten(),x).reshape((d,d,d))) # Derivative of metric
     M.Dgf = theano.function([x],M.Dg(x))
 
     ##### Measure
