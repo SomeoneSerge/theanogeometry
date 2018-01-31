@@ -39,6 +39,16 @@ def constant(c):
     except:
         return c
 
+# get function derivatives and compiled versions
+def get_df(f,x,thetas,extra_params):
+    y = f(x,*extra_params)
+    dfx = T.grad(y,x)
+    dfthetas = tuple(T.grad(y, theta) for theta in thetas)
+    
+    df = (y,dfx)+dfthetas
+    dff = theano.function([x]+list(extra_params), df)
+    return (df,dff)
+
 # numeric optimizer
 def get_minimizer(f,method=None,options=None):
     x = T.vector()
@@ -92,7 +102,7 @@ def integrate(ode,x,*y):
 # standard noise realisations
 srng = RandomStreams()#seed=42)
 dWt = T.matrix() # n_steps x d, d usually manifold dimension
-dWs = lambda d: srng.normal((n_steps,d), std=np.sqrt(dt))
+dWs = lambda d: srng.normal((n_steps,d), std=T.sqrt(dt))
 d = T.scalar(dtype='int64')
 dWsf = theano.function([d],dWs(d))
 del d

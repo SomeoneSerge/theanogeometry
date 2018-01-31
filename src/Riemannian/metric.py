@@ -19,6 +19,7 @@
 
 from src.setup import *
 from src.utils import *
+from src.linalg import *
 
 def initialize(M,truncate_high_order_derivatives=False):
     """ add metric related structures to manifold """
@@ -44,12 +45,17 @@ def initialize(M,truncate_high_order_derivatives=False):
     M.gsharpf = theano.function([x],M.gsharp(x))
 
 
-    M.Dg = lambda x: truncate_derivatives(T.jacobian(M.g(x).flatten(),x).reshape((d,d,d))) # Derivative of metric
+    M.Dg = lambda x: T.jacobian(M.g(x).flatten(),x).reshape((d,d,d)) # Derivative of metric
     M.Dgf = theano.function([x],M.Dg(x))
 
     ##### Measure
     M.mu_Q = lambda x: 1./T.nlinalg.Det()(M.g(x))
     M.mu_Qf = theano.function([x],M.mu_Q(x))
+
+    ### Determinant
+    M.determinant = lambda x,A: LogAbsDet()(T.tensordot(M.g(x),A,(1,0)))
+    A = T.matrix()
+    M.determinantf = theano.function([x,A],M.determinant(x,A))
 
     ##### Sharp and flat map:
 #    M.Dgsharp = lambda q: T.jacobian(M.gsharp(q).flatten(),q).reshape((d,d,d)) # Derivative of sharp map
@@ -61,9 +67,9 @@ def initialize(M,truncate_high_order_derivatives=False):
     M.sharpf = theano.function([x,p], M.sharp(x,p))
 
     ##### Christoffel symbols
-    M.Gamma_g = lambda x: 0.5*(T.tensordot(M.gsharp(x),M.Dg(x),axes = [1,0])
-                   +T.tensordot(M.gsharp(x),M.Dg(x),axes = [1,0]).dimshuffle(0,2,1)
-                   -T.tensordot(M.gsharp(x),M.Dg(x),axes = [1,2]))
+    M.Gamma_g = lambda x: 0.5*(T.tensordot(M.gsharp(x),truncate_derivatives(M.Dg(x)),axes = [1,0])
+                   +T.tensordot(M.gsharp(x),truncate_derivatives(M.Dg(x)),axes = [1,0]).dimshuffle(0,2,1)
+                   -T.tensordot(M.gsharp(x),truncate_derivatives(M.Dg(x)),axes = [1,2]))
     M.Gamma_gf = theano.function([x],M.Gamma_g(x))
 
     # Inner Product from g

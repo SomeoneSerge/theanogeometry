@@ -23,8 +23,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import matplotlib.ticker as ticker
 
-from pylab import rcParams
-rcParams['figure.figsize'] = 9,7
+mpl_figsize = 12,12
+mpl.rcParams['figure.figsize'] = mpl_figsize
 
 from src.setup import * 
 from src.utils import * 
@@ -34,6 +34,7 @@ from src.utils import *
 ############################
 
 def newfig(nrows=1,ncols=1,plot_number=1,new_figure=True):
+    mpl.rcParams['figure.figsize'] = mpl_figsize
     if new_figure:
         fig = plt.figure()
     else:
@@ -146,7 +147,10 @@ def plot_sphere_density_estimate(M, obss_M, alpha=.2, bandwidth=0.08, pts=100, c
 
 def plot_Euclidean_density_estimate(obss, alpha=.2, view='2D', limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet):
         if view is '2D':
-            hist,histy,histx= np.histogram2d(obss[:,0],obss[:,1],bins=25)
+            if range is None:
+                hist,histy,histx= np.histogram2d(obss[:,0],obss[:,1],bins=25)
+            else:
+                hist,histy,histx= np.histogram2d(obss[:,0],obss[:,1],bins=25,range=[[limits[0],          limits[1]],[limits[2],limits[3]]])
             extent = [histy[0],histy[-1],histx[0],histx[-1]]
             print(extent)
 
