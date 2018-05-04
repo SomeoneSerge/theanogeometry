@@ -69,15 +69,30 @@ class Manifold(object):
         """ return symbolic steps of process """
         return T.matrix()
 
+    def newfig(self):
+        """ open new plot for manifold """
+
     def __str__(self):
         return "abstract manifold"
 
 class EmbeddedManifold(Manifold):
     """ Embedded manifold base class """
 
-    def __init__(self):
+    def __init__(self,F,dim,emb_dim,invF=None):
         Manifold.__init__(self)
-        self.emb_dim = None
+        self.F = F
+        self.invF = invF
+        self.dim = constant(dim)
+        self.emb_dim = constant(emb_dim)
+
+        x = self.coords()
+        self.Ff = theano.function([x], self.F(x))
+
+        self.JF = lambda x: T.jacobian(self.F(x),x)
+        self.JFf = theano.function([x], self.JF(x))
+
+        # metric matrix
+        self.g = lambda x: T.dot(self.JF(x).T,self.JF(x))
 
     def __str__(self):
-        return "abstract embedded manifold"
+        return "dim %d manifold embedded in R^%d" % (self.dim.eval(),self.emb_dim.eval())

@@ -93,6 +93,84 @@ class symEigh(theano.tensor.nlinalg.Eig):
         res = (g.T+g)/2
         return [res]
 
+class symEighSqrt(theano.tensor.nlinalg.Eig):
+    """
+    Return the eigenvalues and eigenvectors of a symmetric matrix A given by its square root B, i.e. A=BB^H
+    Returning symbolic gradient allowing automatic higher-order derivatives.
+    """
+
+    _numop = staticmethod(numpy.linalg.svd)
+
+    def __init__(self):
+        None
+
+    def make_node(self, x):
+        x = as_tensor_variable(x)
+        assert x.ndim == 2
+        # Numpy's linalg.eigh may return either double or single
+        # presision eigenvalues depending on installed version of
+        # LAPACK.  Rather than trying to reproduce the (rather
+        # involved) logic, we just probe linalg.eigh with a trivial
+        # input.
+        w_dtype = self._numop([[numpy.dtype(x.dtype).type()]])[0].dtype.name
+        w = theano.tensor.vector(dtype=w_dtype)
+        v = theano.tensor.matrix(dtype=x.dtype)
+        return Apply(self, [x], [w, v])
+
+    def perform(self, node, inputs, outputs):
+        (x,) = inputs
+        (w, v) = outputs
+        u, s, vh = self._numop(x, full_matrices=False)
+        w[0], v[0] = s ** 2, u
+
+    def infer_shape(self, node, shapes):
+        n = shapes[0][0]
+        d = shapes[0][1]
+        return [(d,), (n, d)]
+
+    def grad(self, inputs, g_outputs):
+        r"""The gradient function should return
+           .. math:: \sum_n\left(W_n\frac{\partial\,w_n}
+                           {\partial a_{ij}} +
+                     \sum_k V_{nk}\frac{\partial\,v_{nk}}
+                           {\partial a_{ij}}\right),
+        where [:math:`W`, :math:`V`] corresponds to ``g_outputs``,
+        :math:`a` to ``inputs``, and  :math:`(w, v)=\mbox{eig}(a)`.
+        Analytic formulae for eigensystem gradients are well-known in
+        perturbation theory:
+           .. math:: \frac{\partial\,w_n}
+                          {\partial a_{ij}} = v_{in}\,v_{jn}
+           .. math:: \frac{\partial\,v_{kn}}
+                          {\partial a_{ij}} =
+                \sum_{m\ne n}\frac{v_{km}v_{jn}}{w_n-w_m}
+
+        Code derived from theano.nlinalg.Eigh and doi=10.1.1.192.9105
+        """
+        x, = inputs
+        w, v = self(x)
+        # Replace gradients wrt disconnected variables with
+        # zeros. This is a work-around for issue #1063.
+        W, V = _zero_disconnected([w, v], g_outputs)
+
+        N = x.shape[0]
+
+        # W part
+        gW = T.tensordot(v, v * W[numpy.newaxis, :], (1, 1))
+        # V part
+        vv = v[:, :, numpy.newaxis, numpy.newaxis] * v[numpy.newaxis, numpy.newaxis, :, :]
+        minusww = -w[:, numpy.newaxis] + w[numpy.newaxis, :]
+        minuswwinv = 1 / (minusww + T.eye(N))
+        minuswwinv = T.triu(minuswwinv, 1) + T.tril(minuswwinv, -1)  # remove diagonal
+        c = (vv * minuswwinv[numpy.newaxis, :, numpy.newaxis, :]).dimshuffle((1, 3, 0, 2))
+        vc = T.tensordot(v, c, (1, 0))
+        gV = T.tensordot(V, vc, ((0, 1), (0, 1)))
+
+        g = gW + gV
+
+        res = (g.T + g) / 2
+        return [res]
+
+
 class skewEigh(theano.tensor.nlinalg.Eig):
     """
     Return the eigenvalues and eigenvectors of a skew symmetric matrix.

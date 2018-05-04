@@ -33,7 +33,15 @@ from src.utils import *
 #various plotting functions#
 ############################
 
-def newfig(nrows=1,ncols=1,plot_number=1,new_figure=True):
+def newfig2d(nrows=1,ncols=1,plot_number=1,new_figure=True):
+    mpl.rcParams['figure.figsize'] = mpl_figsize
+    if new_figure:
+        fig = plt.figure()
+    else:
+        fig = plt.gcf()
+    plt.axis("equal")
+    return (fig)
+def newfig3d(nrows=1,ncols=1,plot_number=1,new_figure=True):
     mpl.rcParams['figure.figsize'] = mpl_figsize
     if new_figure:
         fig = plt.figure()
@@ -43,6 +51,7 @@ def newfig(nrows=1,ncols=1,plot_number=1,new_figure=True):
     ax.set_xlim3d(-1,1), ax.set_ylim3d(-1,1), ax.set_zlim3d(-1,1)
     ax.set_aspect("equal")
     return (fig,ax)
+newfig = newfig3d # default
 
 ##### plot density estimation using embedding space metric
 # adapted from http://scikit-learn.org/stable/auto_examples/neighbors/plot_species_kde.html

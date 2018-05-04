@@ -37,13 +37,12 @@ def initialize(M,f=None):
     from scipy.optimize import minimize,fmin_bfgs,fmin_cg
     def shoot(x,y,v0):
         def f(w):
-            z = lossf(x,w,y)
-            dz = dlossf(x,w,y)
-            return (z,dz)
+            z = lossf(x,w.astype(theano.config.floatX),y)
+            dz = dlossf(x,w.astype(theano.config.floatX),y)
+            return (z.astype(np.double),dz.astype(np.double))
 
-        res = minimize(f, v0, method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
+        res = minimize(f, v0.astype(np.double), method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
 
         return(res.x,res.fun)
 
     M.Logf = lambda x,y,v0: shoot(x,y,v0)
-

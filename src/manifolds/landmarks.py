@@ -27,11 +27,11 @@ import matplotlib.pyplot as plt
 class landmarks(Manifold):
     """ LDDMM landmark manifold """
 
-    def __init__(self,N=1,m=2,k_alpha=1.,k_sigma=np.diag((.5,.5))):
+    def __init__(self,N=1,m=2,k_alpha=1.,k_sigma=np.diag((.5,.5)),kernel='Gaussian'):
         Manifold.__init__(self)
 
         self.N = theano.shared(N) # number of landmarks
-        self.m = constant(m) # landmark space dimension (usually 2 or 3
+        self.m = T.constant(m) # landmark space dimension (usually 2 or 3
         self.dim = self.m*self.N
         self.rank = theano.shared(self.dim.eval())
 
@@ -39,31 +39,49 @@ class landmarks(Manifold):
         self.k_sigma = theano.shared(k_sigma) # standard deviation of the kernel
         self.inv_k_sigma = theano.tensor.nlinalg.MatrixInverse()(self.k_sigma)
         self.k_Sigma = T.tensordot(k_sigma,k_sigma,(1,1))
+        self.kernel = kernel
 
         ##### Kernel on M:
-        def k(q1,q2):
-            r_sq = T.sqr(T.tensordot(q1.reshape((-1,m)).dimshuffle(0,'x',1)-q2.reshape((-1,m)).dimshuffle('x',0,1),self.inv_k_sigma,(2,1))).sum(2)
-            return  self.k_alpha*T.exp(-.5*r_sq)
+        if self.kernel is 'Gaussian':
+            k = lambda x: self.k_alpha*T.exp(-.5*T.sqr(T.tensordot(x,self.inv_k_sigma,(0 if x.type == T.vector().type else 2,1))).sum(0 if x.type == T.vector().type else 2))
+        elif self.kernel is 'K1':
+            def k(x):
+                r = T.sqrt((1e-7+T.sqr(T.tensordot(x,self.inv_k_sigma,(0 if x.type == T.vector().type else 2,1))).sum(0 if x.type == T.vector().type else 2)))
+                return self.k_alpha*2*(1+r)*T.exp(-r)
+        else:
+            raise Exception('unknown kernel specified')
         self.k = k
+        dk = lambda x: T.grad(k(x),x)
+        self.dk = dk
+        d2k = lambda x: theano.gradient.hessian(k(x),x)
+        self.d2k = d2k
 
         # in coordinates
-        self.K = lambda q1,q2: (self.k(q1,q2)[:,:,np.newaxis,np.newaxis]*T.eye(self.m)[np.newaxis,np.newaxis,:,:]).dimshuffle((0,2,1,3)).reshape((-1,self.dim))
         q1 = self.element()
         q2 = self.element()
-        Kf = theano.function([q1,q2],self.K(q1,q2))
+        self.k_q = lambda q1,q2: self.k(q1.reshape((-1,m)).dimshuffle(0,'x',1)-q2.reshape((-1,m)).dimshuffle('x',0,1))
+        self.k_qf = theano.function([q1,q2],self.k_q(q1,q2))
+        self.K = lambda q1,q2: (self.k_q(q1,q2)[:,:,np.newaxis,np.newaxis]*T.eye(self.m)[np.newaxis,np.newaxis,:,:]).dimshuffle((0,2,1,3)).reshape((-1,self.dim))
+        self.Kf = theano.function([q1,q2],self.K(q1,q2))
 
         ##### Metric:
         def gsharp(q):
             return self.K(q,q)
         self.gsharp = gsharp
 
+
+        #### landmark specific setup (see Micheli, Michor, Mumford 2013)
+        self.dK = lambda q1,q2: T.jacobian(self.K(q1,theano.gradient.disconnected_grad(q2)).flatten(),q1).reshape((self.N,self.m,self.N,self.m,self.N,self.m))
+        self.d2K = lambda q1,q2: T.jacobian(self.DK(q1,theano.gradient.disconnected_grad(q2)).flatten(),q1).reshape((self.N,self.m,self.N,self.m,self.N,self.m,self.N,self.m))
+        #self.P = lambda q1,q2,alpha,beta: self.dK(q1,q2)
+
     def __str__(self):
-        return "%d landmarks in R^%d (dim %d). k_alpha=%d, k_sigma=%s" % (self.N.eval(),self.m.eval(),self.dim.eval(),self.k_alpha.eval(),self.k_sigma.eval())
+        return "%d landmarks in R^%d (dim %d). kernel %s, k_alpha=%d, k_sigma=%s" % (self.N.eval(),self.m.eval(),self.dim.eval(),self.kernel,self.k_alpha.eval(),self.k_sigma.eval())
 
     def plot(self):
         plt.axis('equal')
 
-    def plotx(self, x, u=None, color='b', color_intensity=1., linewidth=1., prevx=None, last=True, curve=False, markersize=None):
+    def plotx(self, x, u=None, color='b', color_intensity=1., linewidth=1., prevx=None, last=True, curve=False, markersize=None, arrowcolor='k'):
         if len(x.shape)>1:
             for i in range(x.shape[0]):
                 self.plotx(x[i], u=u if i == 0 else None,
@@ -87,7 +105,7 @@ class landmarks(Manifold):
 
             if u is not None:
                 u = u.reshape((NN, self.m.eval()))
-                plt.quiver(x[j,0], x[j,1], u[j, 0], u[j, 1], pivot='tail', linewidth=linewidth, scale=5)
+                plt.quiver(x[j,0], x[j,1], u[j, 0], u[j, 1], pivot='tail', linewidth=linewidth, scale=5, color=arrowcolor)
         if curve and (last or prevx is None):
             plt.plot(np.hstack((x[:,0],x[0,0])),np.hstack((x[:,1],x[0,1])),'o-',color=color)
 

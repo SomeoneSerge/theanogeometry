@@ -22,6 +22,7 @@ from src.params import *
 
 from src.manifolds.manifold import *
 
+from src.plotting import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -31,22 +32,11 @@ class Ellipsoid(EmbeddedManifold):
     """ 2d Ellipsoid """
 
     def __init__(self,params=np.array([1.,1.,1.])):
-        EmbeddedManifold.__init__(self)
-        self.dim = constant(2)
-        self.emb_dim = constant(3)
         self.params = theano.shared(np.array(params)) # ellipsoid parameters (e.g. [1.,1.,1.] for sphere)
-        #self.m = theano.shared(m)
 
-        ## map F stereographic R2_r\rightarrow R3_s
-        x = self.coords()
         F = lambda x: params*T.stack([2*x[0],2*x[1],-(-1+x[0]**2+x[1]**2)])/(1+x[0]**2+x[1]**2)
-        self.Ff = theano.function([x], F(x))
 
-        JF = lambda x: T.jacobian(F(x),x)
-        self.JFf = theano.function([x], JF(x))
-
-        # metric matrix
-        self.g = lambda x: T.dot(JF(x).T,JF(x))
+        EmbeddedManifold.__init__(self,F,2,3)
 
         # action of matrix group on elements
         x = self.element()
@@ -58,6 +48,9 @@ class Ellipsoid(EmbeddedManifold):
 
     def __str__(self):
         return "%dd ellipsoid, parameters %s" % (self.dim.eval(),self.params.eval())
+
+    def newfig(self):
+        newfig3d()
 
     def plot(self,rotate=None,alpha=None,lw=0.3):
         ax = plt.gca(projection='3d')
@@ -91,10 +84,6 @@ class Ellipsoid(EmbeddedManifold):
         ax.plot_wireframe(x, y, z, color='gray', alpha=0.5)
 
         if alpha is not None:
-            u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
-            x=self.params.eval()[0]*np.cos(u)*np.sin(v)
-            y=self.params.eval()[1]*np.sin(u)*np.sin(v)
-            z=self.params.eval()[2]*np.cos(v)
             ax.plot_surface(x, y, z, color=cm.jet(0.), alpha=alpha)
 
     # plot x on ellipsoid. x can be either in coordinates or in R^3
