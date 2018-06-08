@@ -32,14 +32,12 @@ def initialize(M,f=None):
         f = M.Exp
     loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(f(x,v)-y))
     dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
-    lossf = theano.function([x,v,y], loss(x,v,y))
-    dlossf = theano.function([x,v,y], dloss(x,v,y))
+    dlossf = theano.function([x,v,y], (loss(x,v,y),dloss(x,v,y)))
 
     from scipy.optimize import minimize,fmin_bfgs,fmin_cg
-    def shoot(x,y,v0=None):
+    def shoot(x,y,v0=None):        
         def f(w):
-            z = lossf(x,w.astype(theano.config.floatX),y)
-            dz = dlossf(x,w.astype(theano.config.floatX),y)
+            (z,dz) = dlossf(x,w.astype(theano.config.floatX),y)
             return (z.astype(np.double),dz.astype(np.double))
 
         if v0 is None:
@@ -48,4 +46,5 @@ def initialize(M,f=None):
 
         return (res.x,res.fun)
 
-    M.Logf = lambda x,y,v0: shoot(x,y,v0)
+    M.Logf = shoot
+    #M.Logf = lambda x,y,v0: shoot(x,y,v0)

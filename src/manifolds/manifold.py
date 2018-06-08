@@ -94,5 +94,29 @@ class EmbeddedManifold(Manifold):
         # metric matrix
         self.g = lambda x: T.dot(self.JF(x).T,self.JF(x))
 
+
+        # get coordinate representation from embedding space
+        from scipy.optimize import minimize
+        def get_get_coords():
+            x = self.element()
+            y = self.element()
+        
+            loss = lambda x,y: 1./self.emb_dim.eval()*T.sum(T.sqr(self.F(x)-y))
+            dloss = lambda x,y: T.grad(loss(x,y),x)
+            dlossf = theano.function([x,y], (loss(x,y),dloss(x,y)))
+        
+            from scipy.optimize import minimize,fmin_bfgs,fmin_cg
+            def get_coords(y,x0=None):        
+                def f(x):
+                    (z,dz) = dlossf(x,y.astype(theano.config.floatX))
+                    return (z.astype(np.double),dz.astype(np.double))
+                if x0 is None:
+                    x0 = np.zeros(self.dim.eval()).astype(np.double)
+                res = minimize(f, x0, method='CG', jac=True, options={'disp': False, 'maxiter': 100})
+                return res.x
+            
+            return get_coords
+        self.get_coordsf = get_get_coords()
+
     def __str__(self):
         return "dim %d manifold embedded in R^%d" % (self.dim.eval(),self.emb_dim.eval())
