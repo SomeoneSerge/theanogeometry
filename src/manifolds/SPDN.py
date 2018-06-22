@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 class SPDN(EmbeddedManifold):
-    """ 2d Ellipsoid """
+    """ manifold of symmetric positive definite matrices """
 
     def __init__(self,N=3):
         EmbeddedManifold.__init__(self)
