@@ -26,7 +26,6 @@ def initialize(M):
     x = M.element()
     dsm = T.matrix() # derivative of Euclidean semimartingale
     u = M.FM_element()
-    d = M.dim    
     
     def Brownian_development(x,dWt):
         # amend x with orthogonal basis to get initial frame bundle element
