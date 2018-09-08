@@ -31,12 +31,71 @@ import matplotlib.ticker as ticker
 class Ellipsoid(EmbeddedManifold):
     """ 2d Ellipsoid """
 
-    def __init__(self,params=np.array([1.,1.,1.])):
+    def __init__(self,params=np.array([1.,1.,1.]),chart_center='z',use_spherical_coords=False):
         self.params = theano.shared(np.array(params)) # ellipsoid parameters (e.g. [1.,1.,1.] for sphere)
+        self.use_spherical_coords = use_spherical_coords
 
-        F = lambda x: params*T.stack([2*x[0],2*x[1],-(-1+x[0]**2+x[1]**2)])/(1+x[0]**2+x[1]**2)
+        if not use_spherical_coords:
+            if chart_center is 'z':
+                F = lambda x: params*T.stack([2*x[0],2*x[1],-(-1+x[0]**2+x[1]**2)])/(1+x[0]**2+x[1]**2)
+            elif chart_center is 'y':
+                F = lambda x: params*T.stack([2*x[0],-(-1+x[0]**2+x[1]**2),2*x[1]])/(1+x[0]**2+x[1]**2)
+            elif chart_center is 'x':
+                F = lambda x: params*T.stack([-(-1+x[0]**2+x[1]**2),2*x[0],2*x[1]])/(1+x[0]**2+x[1]**2)
+            else:
+                assert(False)
+
+        # spherical coordinates
+        x = self.coords() # Point on M in coordinates
+        if chart_center is 'z':
+            self.F_spherical = lambda phitheta: params*T.stack([T.sin(phitheta[1])*T.cos(phitheta[0]),T.sin(phitheta[1])*T.sin(phitheta[0]),T.cos(phitheta[1])])
+        elif chart_center is 'y':
+            self.F_spherical = lambda phitheta: params*T.stack([T.sin(phitheta[1])*T.cos(phitheta[0]),T.cos(phitheta[1]),T.sin(phitheta[1])*T.sin(phitheta[0])])
+        elif chart_center is 'x':
+            self.F_spherical = lambda phitheta: params*T.stack([T.cos(phitheta[1]),T.sin(phitheta[1])*T.cos(phitheta[0]),T.sin(phitheta[1])*T.sin(phitheta[0])])
+        else:
+            assert(False)
+        self.F_sphericalf = theano.function([x], self.F_spherical(x))
+        self.JF_spherical = lambda x: T.jacobian(self.F_spherical(x),x)
+        self.JF_sphericalf = theano.function([x], self.JF_spherical(x))
+        self.F_spherical_inv = lambda x: T.stack([T.arctan2(x[1],x[0]),T.arccos(x[2])])
+        self.F_spherical_invf = theano.function([x], self.F_spherical_inv(x))
+        self.g_spherical = lambda x: T.dot(self.JF_spherical(x).T,self.JF_spherical(x))
+        self.mu_Q_spherical = lambda x: 1./T.nlinalg.Det()(self.g_spherical(x))
+        self.mu_Q_sphericalf = theano.function([x],self.mu_Q_spherical(x))
+
+        # optionally use spherical coordinates in chart computations
+        if use_spherical_coords:
+            F = self.F_spherical
 
         EmbeddedManifold.__init__(self,F,2,3)
+
+        # hardcoded Jacobian for speed (removing one layer of differentiation)
+        if not use_spherical_coords:
+            if chart_center is 'z':
+                self.JF = lambda x: T.stack(params)[:,np.newaxis]*T.stack([-2*x[0]**2+2*x[1]**2+2,-4*x[0]*x[1],-4*x[0]*x[1],2*x[0]**2-2*x[1]**2+2,-4*x[0],-4*x[1]]).reshape((3,2))/(1+x[0]**2+x[1]**2)**2
+            elif chart_center is 'y':
+                self.JF = lambda x: T.stack(params)[:,np.newaxis]*T.stack([-2*x[0]**2+2*x[1]**2+2,-4*x[0]*x[1],-4*x[0],-4*x[1],-4*x[0]*x[1],2*x[0]**2-2*x[1]**2+2]).reshape((3,2))/(1+x[0]**2+x[1]**2)**2
+            elif chart_center is 'x':
+                self.JF = lambda x: T.stack(params)[:,np.newaxis]*T.stack([-4*x[0],-4*x[1],-2*x[0]**2+2*x[1]**2+2,-4*x[0]*x[1],-4*x[0]*x[1],2*x[0]**2-2*x[1]**2+2]).reshape((3,2))/(1+x[0]**2+x[1]**2)**2
+            else:
+                assert(False)
+        else:
+            if chart_center is 'z':
+                self.JF = lambda phitheta: T.stack(params)[:,np.newaxis]*T.stack([-T.sin(phitheta[0])*T.sin(phitheta[1]),T.cos(phitheta[0])*T.cos(phitheta[1]),T.cos(phitheta[0])*T.sin(phitheta[1]),T.sin(phitheta[0])*T.cos(phitheta[1]),0,-T.sin(phitheta[1])]).reshape((3,2))
+            elif chart_center is 'y':
+                self.JF = lambda phitheta: T.stack(params)[:,np.newaxis]*T.stack([-T.sin(phitheta[0])*T.sin(phitheta[1]),T.cos(phitheta[0])*T.cos(phitheta[1]),0,-T.sin(phitheta[1]),T.cos(phitheta[0])*T.sin(phitheta[1]),T.sin(phitheta[0])*T.cos(phitheta[1])]).reshape((3,2))
+            elif chart_center is 'x':
+                self.JF = lambda phitheta: T.stack(params)[:,np.newaxis]*T.stack([0,-T.sin(phitheta[1]),-T.sin(phitheta[0])*T.sin(phitheta[1]),T.cos(phitheta[0])*T.cos(phitheta[1]),T.cos(phitheta[0])*T.sin(phitheta[1]),T.sin(phitheta[0])*T.cos(phitheta[1])]).reshape((3,2))
+            else:
+                assert(False)
+
+        x = self.coords()
+        self.JF_theanof = self.JFf
+        self.JFf = theano.function([x], self.JF(x))
+        # metric matrix
+        self.g = lambda x: T.dot(self.JF(x).T,self.JF(x))
+
 
         # action of matrix group on elements
         x = self.element()
@@ -47,7 +106,7 @@ class Ellipsoid(EmbeddedManifold):
         self.actsf = theano.function([gs,x], self.act(gs,x))
 
     def __str__(self):
-        return "%dd ellipsoid, parameters %s" % (self.dim.eval(),self.params.eval())
+        return "%dd ellipsoid, parameters %s, spherical coords %s" % (self.dim.eval(),self.params.eval(),self.use_spherical_coords)
 
     def newfig(self):
         newfig3d()

@@ -28,21 +28,23 @@ def initialize(M,f=None):
     v = M.vector()
 
     if f is None:
+        print("using M.Exp for Logarithm")
         f = M.Exp
     loss = lambda x,v,y: 1./M.dim.eval()*T.sum(T.sqr(f(x,v)-y))
     dloss = lambda x,v,y: T.grad(loss(x,v,y),v)
-    lossf = theano.function([x,v,y], loss(x,v,y))
-    dlossf = theano.function([x,v,y], dloss(x,v,y))
+    dlossf = theano.function([x,v,y], (loss(x,v,y),dloss(x,v,y)))
 
     from scipy.optimize import minimize,fmin_bfgs,fmin_cg
-    def shoot(x,y,v0):
+    def shoot(x,y,v0=None):        
         def f(w):
-            z = lossf(x,w.astype(theano.config.floatX),y)
-            dz = dlossf(x,w.astype(theano.config.floatX),y)
+            (z,dz) = dlossf(x,w.astype(theano.config.floatX),y)
             return (z.astype(np.double),dz.astype(np.double))
 
-        res = minimize(f, v0.astype(np.double), method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 100})
+        if v0 is None:
+            v0 = np.zeros(M.dim.eval())
+        res = minimize(f, v0.astype(np.double), method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 500})
 
-        return(res.x,res.fun)
+        return (res.x,res.fun)
 
-    M.Logf = lambda x,y,v0: shoot(x,y,v0)
+    M.Logf = shoot
+    #M.Logf = lambda x,y,v0: shoot(x,y,v0)

@@ -20,21 +20,31 @@
 from src.setup import *
 from src.utils import *
 
+###############################################################
+# Langevin equations https://arxiv.org/abs/1605.09276
+###############################################################
 def initialize(M):
-    """ Brownian motion in coordinates """
+    q = M.coords()
+    p = M.coordscovector()
+    
+    l = T.scalar()
+    s = T.scalar()
 
-    x = M.element()
     dW = M.element()
-    t = T.scalar()
 
-    def sde_Brownian_coords(dW,t,x):
-        gsharpx = M.gsharp(x)
-        X = theano.tensor.slinalg.Cholesky()(gsharpx)
-        det = -.5*T.tensordot(gsharpx,M.Gamma_g(x),((0,1),(0,1)))
+    dq = lambda q,p: T.grad(M.H(q,p),p)
+    dp = lambda q,p: -T.grad(M.H(q,p),q)
+
+    def sde_Langevin(dW,t,x,l,s):
+        dqt = dq(x[0],x[1])
+        dpt = -l*dq(x[0],x[1])+dp(x[0],x[1])
+
+        X = T.stack((T.zeros((M.dim,M.dim)),s*T.eye(M.dim)))
+        det = T.stack((dqt,dpt))
         sto = T.tensordot(X,dW,(1,0))
-        return (det,sto,X)
-    M.sde_Brownian_coords = sde_Brownian_coords
-    M.sde_Brownian_coordsf = theano.function([dW,t,x], M.sde_Brownian_coords(dW,t,x), on_unused_input = 'ignore') 
-    M.Brownian_coords = lambda x,dWt: integrate_sde(sde_Brownian_coords,integrator_ito,x,dWt)
-    M.Brownian_coordsf = theano.function([x,dWt], M.Brownian_coords(x,dWt))
+        return (det,sto,X,l,s)
+    M.Langevin_qp = lambda q,p,l,s,dWt: integrate_sde(sde_Langevin,integrator_ito,T.stack((q,p)),dWt,l,s)
+    M.Langevin_qpf = theano.function([q,p,l,s,dWt], M.Langevin_qp(q,p,l,s,dWt))
 
+    M.Langevin = lambda q,p,l,s,dWt: M.Langevin_qp(q,p,l,s,dWt)[0:2]
+    M.Langevinf = theano.function([q,p,l,s,dWt], M.Langevin(q,p,l,s,dWt))

@@ -22,7 +22,7 @@ from src.setup import *
 from src.utils import *
 from sklearn.decomposition import PCA
 
-def tangent_PCA(Logf, mean, y, x0=None, options=None):
+def tangent_PCA(M, Logf, mean, y, x0=None, options=None):
     try:
         mpu.openPool()
         N = y.shape[0]
@@ -34,7 +34,7 @@ def tangent_PCA(Logf, mean, y, x0=None, options=None):
         raise
     else:
         mpu.closePool()
-    Logs = np.tensordot(M.orthFramef(mean),Logs,(0,1))
+    Logs = np.tensordot(Logs,M.orthFramef(mean),(1,0))
 
     pca = PCA()
     pca.fit(Logs)

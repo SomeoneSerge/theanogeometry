@@ -30,32 +30,8 @@ import matplotlib.ticker as ticker
 class S2(Ellipsoid):
     """ 2d Sphere """
 
-    def __init__(self,use_spherical_coords=False):
-        Ellipsoid.__init__(self,params=[1.,1.,1.])
-        self.use_spherical_coords = use_spherical_coords
-
-        # spherical coordinates
-        x = self.coords() # Point on M in coordinates
-        self.F_spherical = lambda phitheta: T.stack([T.sin(phitheta[1])*T.cos(phitheta[0]),T.sin(phitheta[1])*T.sin(phitheta[0]),T.cos(phitheta[1])])
-        self.F_sphericalf = theano.function([x], self.F_spherical(x))
-        self.JF_spherical = lambda x: T.jacobian(self.F_spherical(x),x)
-        self.JF_sphericalf = theano.function([x], self.JF_spherical(x))
-        self.F_spherical_inv = lambda x: T.stack([T.arctan2(x[1],x[0]),T.arccos(x[2])])
-        self.F_spherical_invf = theano.function([x], self.F_spherical_inv(x))
-        self.g_spherical = lambda x: T.dot(self.JF_spherical(x).T,self.JF_spherical(x))
-        self.mu_Q_spherical = lambda x: 1./T.nlinalg.Det()(self.g_spherical(x))
-        self.mu_Q_sphericalf = theano.function([x],self.mu_Q_spherical(x))
-
-        # optionally use spherical coordinates in chart computations
-        if use_spherical_coords:
-            self.F = self.F_spherical
-            self.Ff = self.F_sphericalf
-
-            self.JF = self.JF_spherical
-            self.JFf = self.JF_sphericalf
-
-            # metric matrix
-            self.g = lambda x: T.dot(self.JF(x).T,self.JF(x))
+    def __init__(self,use_spherical_coords=False,chart_center='z'):
+        Ellipsoid.__init__(self,params=[1.,1.,1.],chart_center=chart_center,use_spherical_coords=use_spherical_coords)
 
     def __str__(self):
         return "%dd sphere (ellipsoid parameters %s, spherical_coords: %s)" % (self.dim.eval(),self.params.eval(),self.use_spherical_coords)
