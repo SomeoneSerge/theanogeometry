@@ -26,3 +26,6 @@ contributed
 # output figures
 *.pdf
 *.png
+
+# temporary files
+.tmp/

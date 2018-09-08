@@ -152,6 +152,12 @@ class LieGroup(EmbeddedManifold):
         self.dL = dL
         #dR = lambda g,h,vh: theano.gradient.Rop(R(theano.gradient.disconnected_grad(g),h).flatten(),h,vh).reshape((N,N))
         self.dR = lambda g,h,vh: T.tensordot(T.jacobian(self.R(theano.gradient.disconnected_grad(g),h).flatten(),h),vh,((1,2),(0,1))).reshape((self.N,self.N))
+        def dR(g,h,vh=None):
+            dR = T.jacobian(self.R(theano.gradient.disconnected_grad(g),h).flatten(),h).reshape((self.N,self.N,self.N,self.N))
+            if vh:
+                return T.tensordot(dR,vh,((2,3),(0,1)))
+            return dR
+        self.dR = dR
         # pullback of L/R of vh\in T_h^*G
         self.codL = lambda g,h,vh: self.dL(g,h,vh).T
         self.codR = lambda g,h,vh: self.dR(g,h,vh).T
@@ -180,7 +186,7 @@ class LieGroup(EmbeddedManifold):
             self.invtrns = self.R # invariance translation
             self.invpb = lambda g,vg: self.dR(self.inv(g),g,vg) # right invariance pullback from TgG to LA
             self.invpf = lambda g,xi: self.dR(g,self.e,xi) # right invariance pushforward from LA to TgG
-            self.invcopb = lambda g,pg: self.codR(inv(g),g,pg) # right invariance pullback from Tg^*G to LA^*
+            self.invcopb = lambda g,pg: self.codR(self.inv(g),g,pg) # right invariance pullback from Tg^*G to LA^*
             self.invcopf = lambda g,alpha: self.codR(g,self.e,alpha) # right invariance pushforward from LA^* to Tg^*G
             self.infgen = lambda xi,g: self.dL(g,self.e,xi) # infinitesimal generator
         self.invpbf = theano.function([g,vg],self.invpb(g,vg))

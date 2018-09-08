@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 class SON(LieGroup):
     """ Special Orthogonal Group SO(N) """
 
-    def __init__(self,N=3):
-        LieGroup.__init__(self,N=N,invariance='left')
+    def __init__(self,N=3,invariance='left'):
+        LieGroup.__init__(self,N=N,invariance=invariance)
 
         self.dim = constant(N*(N-1)//2) # group dimension
         self.injectivity_radius = constant(2*np.pi)
