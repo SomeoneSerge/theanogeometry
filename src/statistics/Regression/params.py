@@ -5,7 +5,7 @@ from src.setup import *
 n_samples = theano.shared(2)
 
 # Dimension of euclidean space:
-m = theano.shared(2)
+mx = theano.shared(2)
 
 pi = np.pi
 

@@ -32,6 +32,7 @@ def initialize(M,truncate_high_order_derivatives=False):
 
     d = M.dim
     x = M.element()
+    u = T.matrix()
 
     if hasattr(M, 'g'):
         if not hasattr(M, 'gsharp'):
