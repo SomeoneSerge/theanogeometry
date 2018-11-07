@@ -39,6 +39,13 @@ def constant(c):
     except:
         return c
 
+def scalar(x):
+    """ return scalar of the default Theano type """
+    return np.float32(x) if theano.config.floatX == 'float32' else np.float64(x)
+def tensor(x):
+    """ return tensor of the default Theano type """
+    return x.astype(theano.config.floatX)
+
 # get function derivatives and compiled versions
 def get_df(f,x,thetas,extra_params):
     y = f(x,*extra_params)
