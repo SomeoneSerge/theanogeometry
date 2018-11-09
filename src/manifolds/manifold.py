@@ -82,8 +82,8 @@ class EmbeddedManifold(Manifold):
         Manifold.__init__(self)
         self.F = F
         self.invF = invF
-        self.dim = constant(dim)
-        self.emb_dim = constant(emb_dim)
+        self.dim = None if dim is None else constant(dim)
+        self.emb_dim = None if dim is None else constant(emb_dim)
 
         if F is not None:
             x = self.coords()

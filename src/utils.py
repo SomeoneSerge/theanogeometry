@@ -32,19 +32,21 @@ from src.params import *
 # various useful functions                                            #
 #######################################################################
 
-def constant(c):
-    """ return Theano constant with value of parameter c """
-    try:
-        return T.constant(c)
-    except:
-        return c
-
 def scalar(x):
     """ return scalar of the default Theano type """
     return np.float32(x) if theano.config.floatX == 'float32' else np.float64(x)
 def tensor(x):
     """ return tensor of the default Theano type """
     return x.astype(theano.config.floatX)
+def constant(c):
+    """ return Theano constant with value of parameter c """
+    if isinstance(c,int):
+        return T.constant(c)
+    if isinstance(c,float):
+        return T.constant(scalar(c))
+    if isinstance(c,T.TensorConstant):
+        return c
+    raise ValueError()
 
 # get function derivatives and compiled versions
 def get_df(f,x,thetas,extra_params):
@@ -97,7 +99,7 @@ def integrator(ode_f,method=default_method):
 # return symbolic path given ode and integrator
 def integrate(ode,x,*y):
     (cout, updates) = theano.scan(fn=integrator(ode),
-            outputs_info=[T.constant(0.),x],
+            outputs_info=[constant(0.),x],
             sequences=[*y],
             n_steps=n_steps)
     return cout
@@ -137,7 +139,7 @@ def integrator_ito(sde_f):
 
 def integrate_sde(sde,integrator,x,dWt,*ys):
     (cout, updates) = theano.scan(fn=integrator(sde),
-            outputs_info=[T.constant(0.),x, *ys],
+            outputs_info=[constant(0.),x, *ys],
             sequences=[dWt],
             n_steps=n_steps)
     return cout
