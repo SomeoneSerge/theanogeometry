@@ -67,12 +67,12 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
         t2 = theano.ifelse.ifelse(T.lt(t, Tend - dt / 2),
                                   -Af(x, ytilde, dt * det) / (Tend - t),
                                   # check det term for Stratonovich (correction likely missing)
-                                  0.)
+                                  constant(0.))
         t34 = theano.ifelse.ifelse(T.lt(tp1, Tend - dt / 2),
                                    -(Af(xtp1, ytildetp1, ytildetp1) - Af(x, ytildetp1, ytildetp1)) / (
                                    2 * (Tend - tp1 + dt * T.gt(tp1, Tend - dt / 2))),
                                    # last term in divison is to avoid NaN with non-lazy Theano conditional evaluation
-                                   0.)
+                                   constant(0.))
         log_varphi = t2 + t34
 
         return (det + T.tensordot(X, h, 1), sto, X, log_likelihood, log_varphi, dW_guided/dt, T.zeros_like(v), *dys_sde)
