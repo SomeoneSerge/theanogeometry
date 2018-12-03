@@ -58,7 +58,7 @@ newfig = newfig3d # default
 from sklearn.neighbors import KernelDensity
 from scipy.optimize import minimize
 
-def plot_density_estimate(M, obss, alpha=.2, limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet):
+def plot_density_estimate(M, obss, alpha=.2, limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet, colorbar=True):
     if obss.shape[1] > M.dim.eval():
         obss_q = np.array([M.get_coordsf(obs) for obs in obss])
     else:
@@ -89,7 +89,8 @@ def plot_density_estimate(M, obss, alpha=.2, limits=None, border=1.5, bandwidth=
     surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, facecolors = colors,            linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
     m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)
     m.set_array(colors)
-    plt.colorbar(m, shrink=0.7)
+    if colorbar:
+        plt.colorbar(m, shrink=0.7)
 
 #### Spherical plotting functions
 # plot general function on S2
@@ -157,7 +158,7 @@ def plot_sphere_density_estimate(M, obss_M, alpha=.2, bandwidth=0.08, pts=100, c
         plt.colorbar(m, shrink=0.7)
 
 
-def plot_Euclidean_density_estimate(obss, alpha=.2, view='2D', limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet):
+def plot_Euclidean_density_estimate(obss, alpha=.2, view='2D', limits=None, border=1.5, bandwidth=0.08, pts=100, cmap = cm.jet, colorbar=True):
         if view is '2D':
             if range is None:
                 hist,histy,histx= np.histogram2d(obss[:,0],obss[:,1],bins=25)
@@ -192,5 +193,6 @@ def plot_Euclidean_density_estimate(obss, alpha=.2, view='2D', limits=None, bord
             surf = ax.plot_surface(X, Y, fs.reshape(X.shape), rstride=1, cstride=1, cmap=cmap, facecolors = colors,  linewidth=0., antialiased=True, alpha=alpha, edgecolor=(0,0,0,0), shade=False)
             m = cm.ScalarMappable(cmap=surf.cmap,norm=norm)
             m.set_array(colors)
-            plt.colorbar(m, shrink=0.7)
+            if colorbar:
+                plt.colorbar(m, shrink=0.7)
             ax.set_xlim3d(minx,maxx), ax.set_ylim3d(miny,maxy), ax.set_zlim3d(0,np.max(fs))
