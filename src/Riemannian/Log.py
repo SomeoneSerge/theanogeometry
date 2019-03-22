@@ -44,7 +44,7 @@ def initialize(M,f=None):
             v0 = np.zeros(M.dim.eval())
         res = minimize(f, v0.astype(np.double), method='L-BFGS-B', jac=True, options={'disp': False, 'maxiter': 500})
 
-        return (res.x,res.fun)
+        return (tensor(res.x),res.fun)
 
     M.Logf = shoot
     #M.Logf = lambda x,y,v0: shoot(x,y,v0)

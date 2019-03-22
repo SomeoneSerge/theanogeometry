@@ -70,7 +70,7 @@ class LieGroup(EmbeddedManifold):
         self.expf = theano.function([xi],self.exp(xi))
         def expt(xi):
             (cout, updates) = theano.scan(fn=lambda t,x,dt,xi: (t+dt,self.exp(t*xi)),
-                                          outputs_info=[T.constant(0.),self.e],
+                                          outputs_info=[constant(0.),self.e],
                                           non_sequences=[dt,xi],
                                           n_steps=n_steps)
             return cout

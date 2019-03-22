@@ -35,10 +35,10 @@ class landmarks(Manifold):
         self.dim = self.m*self.N
         self.rank = theano.shared(self.dim.eval())
 
-        self.k_alpha = theano.shared(k_alpha)
-        self.k_sigma = theano.shared(k_sigma) # standard deviation of the kernel
+        self.k_alpha = theano.shared(scalar(k_alpha))
+        self.k_sigma = theano.shared(tensor(k_sigma)) # standard deviation of the kernel
         self.inv_k_sigma = theano.tensor.nlinalg.MatrixInverse()(self.k_sigma)
-        self.k_Sigma = T.tensordot(k_sigma,k_sigma,(1,1))
+        self.k_Sigma = T.tensordot(self.k_sigma,self.k_sigma,(1,1))
         self.kernel = kernel
 
         ##### Kernel on M:

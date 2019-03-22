@@ -12,7 +12,7 @@ import theano
 from theano.tensor import as_tensor_variable
 from theano.gof import Op, Apply
 from theano.gradient import DisconnectedType
-from theano.tensor import basic as tensor
+#from teano.tensor import basic as tensor
 from theano import tensor as T
 
 logger = logging.getLogger(__name__)

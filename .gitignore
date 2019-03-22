@@ -8,6 +8,7 @@ old/
 bin/
 include/
 lib/
+etc/
 pip-*
 share/
 backup/

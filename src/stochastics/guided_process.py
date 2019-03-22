@@ -67,12 +67,12 @@ def get_sde_guided(sde_f, phi, sqrtCov, A=None, method='DelyonHu', integration='
         t2 = theano.ifelse.ifelse(T.lt(t, Tend - dt / 2),
                                   -Af(x, ytilde, dt * det) / (Tend - t),
                                   # check det term for Stratonovich (correction likely missing)
-                                  0.)
+                                  constant(0.))
         t34 = theano.ifelse.ifelse(T.lt(tp1, Tend - dt / 2),
                                    -(Af(xtp1, ytildetp1, ytildetp1) - Af(x, ytildetp1, ytildetp1)) / (
                                    2 * (Tend - tp1 + dt * T.gt(tp1, Tend - dt / 2))),
                                    # last term in divison is to avoid NaN with non-lazy Theano conditional evaluation
-                                   0.)
+                                   constant(0.))
         log_varphi = t2 + t34
 
         return (det + T.tensordot(X, h, 1), sto, X, log_likelihood, log_varphi, dW_guided/dt, T.zeros_like(v), *dys_sde)
@@ -83,7 +83,7 @@ def get_guided_likelihood(M, sde_f, phi, sqrtCov, q, A=None, method='DelyonHu', 
     sde_guided = get_sde_guided(sde_f, phi, sqrtCov, A, method, integration)
     guided = lambda q, v, dWt: integrate_sde(sde_guided,
                                              integrator_ito if method is 'ito' else integrator_stratonovich,
-                                             q, dWt, T.constant(0.), T.constant(0.), T.zeros_like(dWt[0]), v)
+                                             q, dWt, constant(0.), constant(0.), T.zeros_like(dWt[0]), v)
     v = M.element()
     guidedf = theano.function([q, v, dWt], guided(q, v, dWt))
 
@@ -138,7 +138,7 @@ def p_T_log_p_T(g, v, dWs, bridge_sde, phi, options, sigma=None, sde=None, chain
             return (log_varphi[-1], w)
 
         (cout, updates) = theano.scan(fn=bridge_logvarphis,
-                                      outputs_info=[T.constant(0.),init_chain if init_chain is not None else T.zeros_like(dWs)],
+                                      outputs_info=[constant(0.),init_chain if init_chain is not None else T.zeros_like(dWs)],
                                       sequences=[dWsi])
         log_varphi = T.log(T.mean(T.exp(cout[0])))
         log_p_T = -.5 * sigma.shape[0] * T.log(2. * np.pi * Tend) - LogAbsDet()(sigma) - Cgv / (2. * Tend) + log_varphi
@@ -157,7 +157,7 @@ def p_T_log_p_T(g, v, dWs, bridge_sde, phi, options, sigma=None, sde=None, chain
             return (lp_T, lv)
 
         (cout, updates) = theano.scan(fn=bridge_p_T,
-                                      outputs_info=[T.constant(0.), v],
+                                      outputs_info=[constant(0.), v],
                                       sequences=[dWsi])
         p_T = T.mean(cout[:][0])
         log_p_T = T.log(p_T)
