@@ -20,10 +20,12 @@
 from src.setup import *
 from src.params import *
 
+from src.manifolds.manifold import *
+
 class Euclidean(Manifold):
     """ Euclidean space """
 
-    def __init__(self,N=2):
+    def __init__(self,N=3):
         Manifold.__init__(self)
         self.dim = constant(N)
 
